@@ -30,8 +30,7 @@ sync_engine = create_engine(
 
 # Session нужна для транзакций
 session_factory = sessionmaker(sync_engine)
-async_session_factory = async_sessionmaker(async_engine)
-
+async_session_factory: async_sessionmaker[AsyncSession] = async_sessionmaker(async_engine)
 
 MetaStr = Annotated[str, 255]
 DetailedInfoStr = Annotated[str, 2000]

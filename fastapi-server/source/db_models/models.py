@@ -35,6 +35,7 @@ class BugCategory(enum.IntEnum):
     serious = 1
     showstopper = 2
 
+
 class Workers(Base):
     __tablename__ = "Workers"
 
