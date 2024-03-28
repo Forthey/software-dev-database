@@ -12,33 +12,23 @@ from models.workers import Workers, Developers, Testers
 from models.projects import Projects, RelProjectsWorkers
 from models.plan_blocks import PlanBlocks, BlockTesting, BlockBugs, PlanBlocksTransfer
 
-from schemas.workers import WorkersDTO, WorkersAddDTO
+from schemas.workers import WorkersByProjectDTO
 from schemas.projects import ProjectAddDTO, ProjectDTO
 
 from new_types import BugCategory, Level, SpecializationCode
 
 
-async def add_worker(worker: WorkersAddDTO):
+async def get_plan_blocks(project_id: int) -> Sequence[PlanBlocks]:
     session: AsyncSession
-    async with async_session_factory() as session:
-        worker_orm = Workers(
-            **worker.dict()
-        )
-
-        session.add(worker_orm)
-
-        await session.commit()
-
-
-async def get_worker(worker_id: int) -> WorkersDTO:
-    session: AsyncSession
-    async with async_session_factory() as session:
+    with async_session_factory() as session:
+        # TODO: I'll leave it here for a while, mask %thing%
+        # PlanBlocks.development_id.contains("thing")
         query = (
-            select(Workers).where(Workers.id == worker_id)
+            select(PlanBlocks)
+            .where(PlanBlocks.project_id == project_id)
+            .group_by(PlanBlocks.id)
         )
-
         result = await session.execute(query)
-        worker = result.scalars().all()[0]
-        worker_dto = WorkersDTO.model_validate(worker, from_attributes=True)
-
-        return worker_dto
+        plan_blocks = result.scalars().all()
+        await session.commit()
+        return plan_blocks

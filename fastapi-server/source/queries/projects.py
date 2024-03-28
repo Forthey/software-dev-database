@@ -1,4 +1,4 @@
-from sqlalchemy import select, func, Sequence
+from sqlalchemy import select, func, Sequence, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # joinedload подходит только к many-to-one и one-to-one загрузке
@@ -9,7 +9,7 @@ from sqlalchemy.orm import joinedload, selectinload
 
 from database import Base, async_engine, async_session_factory
 from models.workers import Workers, Developers, Testers
-from models.projects import Projects, RefProjectsWorkers
+from models.projects import Projects, RelProjectsWorkers
 from models.plan_blocks import PlanBlocks, BlockTesting, BlockBugs, PlanBlocksTransfer
 
 from schemas.workers import WorkersByProjectDTO
@@ -44,17 +44,35 @@ async def get_projects() -> list[ProjectDTO]:
         return projects_dto
 
 
-async def get_workers(development_id: int) -> list[WorkersByProjectDTO]:
+async def get_workers(project_id: int) -> list[WorkersByProjectDTO]:
     session: AsyncSession
     async with async_session_factory() as session:
         query = (
-            select(RefProjectsWorkers.project_hire_date, RefProjectsWorkers.project_fire_date, Workers).
-            where(RefProjectsWorkers.project_id == development_id).
-            join(Workers, RefProjectsWorkers.workers_id == Workers.id)
+            select(RelProjectsWorkers.project_hire_date, RelProjectsWorkers.project_fire_date, Workers)
+            .where(RelProjectsWorkers.project_id == project_id)
+            .join(Workers, RelProjectsWorkers.workers_id == Workers.id)
         )
+        # # Альтернатива из урока
+        # query = (
+        #     select(Workers)
+        #     .where(Projects.id == project_id)
+        #     .options(joinedload(Workers.projects))
+        # )
 
         result = await session.execute(query)
-        workers = result.scalars().all()
+        workers = result.unique().scalars().all()
         workers_by_project_dto = [WorkersByProjectDTO.model_validate(row, from_attributes=True) for row in workers]
 
         return workers_by_project_dto
+
+
+async def update_project_description(project_id: int, description: str) -> bool:
+    with async_session_factory() as session:
+        # TODO: maybe should be changed to basic update to reduce amount of queries
+        query = (
+            update(Projects).where(Projects.id == project_id).values(description=description)
+        )
+        await session.execute(query)
+        await session.commit()
+
+    return True
