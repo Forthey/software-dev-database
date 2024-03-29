@@ -1,9 +1,7 @@
 # Всё нужное для создания таблицы + метадата
-from sqlalchemy import ForeignKey, text, PrimaryKeyConstraint
+from sqlalchemy import ForeignKey, text
 # Для создания столбцов бд в ORM
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-# Для своих типов
-from sqlalchemy.types import UserDefinedType
 # Базовый класс таблиц + типы
 from database import Base, MetaStr, DetailedInfoStr
 

@@ -1,5 +1,4 @@
-from models.imports import *
-from typing import TYPE_CHECKING
+from models.dependencies import *
 
 
 class Workers(Base):
@@ -18,33 +17,10 @@ class Workers(Base):
     hire_date: Mapped[CreateDate]
     fire_date: Mapped[datetime.datetime | None]
     fire_reason: Mapped[DetailedInfoStr | None]
-
-
-class Developers(Base):
-    __tablename__ = "developers"
-
-    # В ForeignKey можно также передавать ORM класс напрямую, но
-    # чаще всего классы разнесены по файлам и может возникнуть проблема с ключениями
-    # Также в ForeignKey можно использовать поле ondelete="CASCADE", которая
-    # при удалении работника удалит также и разработчика
-    id: Mapped[IntPrimKey] = mapped_column(ForeignKey("Workers.id"))
     overdue_count: Mapped[int] = 0
     level: Mapped[Level]
 
     projects: Mapped[list["Projects"]] = relationship(
-        back_populates="developers",
-        secondary="rel_projects_workers"
-    )
-
-
-class Testers(Base):
-    __tablename__ = "Testers"
-
-    id: Mapped[IntPrimKey] = mapped_column(ForeignKey("Workers.id"))
-    overdue_count: Mapped[int] = 0
-    level: Mapped[Level]
-
-    projects: Mapped[list["Projects"]] = relationship(
-        back_populates="testers",
+        back_populates="workers",
         secondary="rel_projects_workers"
     )

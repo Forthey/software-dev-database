@@ -12,7 +12,7 @@ from models.workers import Workers, Developers, Testers
 from models.projects import Projects, RelProjectsWorkers
 from models.plan_blocks import PlanBlocks, BlockTesting, BlockBugs, PlanBlocksTransfer
 
-from schemas.workers import WorkersByProjectDTO
+from schemas.workers import WorkerByProjectDTO
 from schemas.projects import ProjectAddDTO, ProjectDTO
 
 from new_types import BugCategory, Level, SpecializationCode

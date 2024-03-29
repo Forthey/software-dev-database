@@ -14,7 +14,7 @@ from config import settings
 # Создаем асинхронный движок для подключения к postgres
 async_engine = create_async_engine(
     url=settings.get_psycopg_URL,
-    echo=False,
+    echo=True,
     pool_size=5,
     max_overflow=10
 )
@@ -38,4 +38,4 @@ class Base(DeclarativeBase):
         for column in self.__table__.columns.keys():
             columns.append(f"{column}={getattr(self, column)}")
 
-        return f"[{self.__class__.__name__}]\n\t {"\n\t,".join(columns)}"
+        return f"[{self.__class__.__name__}]\n\t {",\n\t".join(columns)}"

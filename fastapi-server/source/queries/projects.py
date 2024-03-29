@@ -1,3 +1,5 @@
+import datetime
+
 from sqlalchemy import select, func, Sequence, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,14 +10,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
 from database import Base, async_engine, async_session_factory
-from models.workers import Workers, Developers, Testers
+from models.workers import Workers
 from models.projects import Projects, RelProjectsWorkers
 from models.plan_blocks import PlanBlocks, BlockTesting, BlockBugs, PlanBlocksTransfer
 
-from schemas.workers import WorkersByProjectDTO
-from schemas.projects import ProjectAddDTO, ProjectDTO
+from schemas.projects import ProjectAddDTO, ProjectDTO, ProjectWithRelDTO
+from schemas.workers import WorkerDTO
+from schemas.plan_blocks import PlanBlockDTO
+
+# from schemas.all_schemas import ProjectAddDTO, ProjectDTO, ProjectWithRelDTO
 
 from new_types import BugCategory, Level, SpecializationCode
+
+ProjectWithRelDTO.model_rebuild()
 
 
 async def add_project(project: ProjectAddDTO):
@@ -30,11 +37,30 @@ async def add_project(project: ProjectAddDTO):
         await session.commit()
 
 
-async def get_projects() -> list[ProjectDTO]:
+async def close_project(project_id: int):
+    session: AsyncSession
+    async with async_session_factory() as session:
+        project_query = (
+            update(Projects)
+            .where(Projects.id == project_id)
+            .values(end_date=datetime.datetime.now(datetime.UTC))
+        )
+
+        workers_query = (
+            update(RelProjectsWorkers)
+            .where(RelProjectsWorkers.project_id == project_id)
+            .values(project_fire_date=datetime.datetime.now(datetime.UTC))
+        )
+
+        await session.execute(project_query)
+        await session.execute(workers_query)
+
+
+async def get_active_projects() -> list[ProjectDTO]:
     session: AsyncSession
     async with async_session_factory() as session:
         query = (
-            select(Projects)
+            select(Projects).where(Projects.end_date == None)
         )
 
         result = await session.execute(query)
@@ -44,31 +70,35 @@ async def get_projects() -> list[ProjectDTO]:
         return projects_dto
 
 
-async def get_workers(project_id: int) -> list[WorkersByProjectDTO]:
+async def get_project(project_id: int):
     session: AsyncSession
     async with async_session_factory() as session:
-        query = (
-            select(RelProjectsWorkers.project_hire_date, RelProjectsWorkers.project_fire_date, Workers)
-            .where(RelProjectsWorkers.project_id == project_id)
-            .join(Workers, RelProjectsWorkers.workers_id == Workers.id)
-        )
-        # # Альтернатива из урока
         # query = (
-        #     select(Workers)
-        #     .where(Projects.id == project_id)
-        #     .options(joinedload(Workers.projects))
+        #     select(RelProjectsWorkers.project_hire_date, RelProjectsWorkers.project_fire_date, Workers)
+        #     .where(RelProjectsWorkers.project_id == project_id)
+        #     .join(Workers, RelProjectsWorkers.worker_id == Workers.id)
         # )
+        # Альтернатива из урока
+        query = (
+            select(Projects)
+            .where(Projects.id == project_id)
+            .options(selectinload(Projects.workers))
+            .options(selectinload(Projects.plan_blocks))
+        )
 
         result = await session.execute(query)
-        workers = result.unique().scalars().all()
-        workers_by_project_dto = [WorkersByProjectDTO.model_validate(row, from_attributes=True) for row in workers]
+
+        project = result.scalars().one()
+        print(f"{project=}")
+
+        print(f"{project.workers=}")
+        workers_by_project_dto = ProjectWithRelDTO.model_validate(project, from_attributes=True)
 
         return workers_by_project_dto
 
 
 async def update_project_description(project_id: int, description: str) -> bool:
     with async_session_factory() as session:
-        # TODO: maybe should be changed to basic update to reduce amount of queries
         query = (
             update(Projects).where(Projects.id == project_id).values(description=description)
         )

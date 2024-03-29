@@ -1,8 +1,17 @@
+"""
+This file contains project-related pydantic schemas
+
+Available schemas are
+1. ProjectAddDTO
+2. ProjectDTO
+3. ProjectWithRelDTO
+"""
+
+
 from pydantic import BaseModel
 import datetime
 
 from database import MetaStr, DetailedInfoStr
-from new_types import BugCategory, Level, SpecializationCode
 
 
 class ProjectAddDTO(BaseModel):
@@ -14,3 +23,8 @@ class ProjectDTO(ProjectAddDTO):
     id: int
     start_date: datetime.datetime
     end_date: datetime.datetime | None
+
+
+class ProjectWithRelDTO(ProjectDTO):
+    workers: list["WorkerDTO"]
+    plan_blocks: list["PlanBlockDTO"]

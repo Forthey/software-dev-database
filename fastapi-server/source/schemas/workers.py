@@ -1,3 +1,11 @@
+"""
+This file contains workers-related pydantic schemas
+
+Available schemas are
+1. WorkerAddDTO
+2. WorkerDTO
+3. Workers
+"""
 from pydantic import BaseModel
 import datetime
 
@@ -5,7 +13,7 @@ from database import MetaStr, DetailedInfoStr
 from new_types import BugCategory, Level, SpecializationCode
 
 
-class WorkersAddDTO(BaseModel):
+class WorkerAddDTO(BaseModel):
     specialization_code: SpecializationCode
     passport_number: MetaStr
     username: MetaStr
@@ -15,21 +23,23 @@ class WorkersAddDTO(BaseModel):
     email: MetaStr
     phone_number: MetaStr | None
     birthday: datetime.datetime | None
+    level: Level
 
 
-class WorkersDTO(WorkersAddDTO):
+class WorkerDTO(WorkerAddDTO):
     id: int
     hire_date: datetime.datetime
     fire_date: datetime.datetime | None
     fire_reason: DetailedInfoStr | None
+    overdue_count: int = 0
 
 
-class WorkersRelDTO(WorkersDTO):
-    projects: list["ProjectsDTO"]
-    plan_blocks: list["PlanBlocksDTO"]
+class WorkerWithRelDTO(WorkerDTO):
+    projects: list["ProjectDTO"]
+    plan_blocks: list["PlanBlockDTO"]
 
 
-class WorkersByProjectDTO(WorkersDTO):
+class WorkerByProjectDTO(WorkerDTO):
     project_hire_date: datetime.datetime
     project_fire_date: datetime.datetime | None
 

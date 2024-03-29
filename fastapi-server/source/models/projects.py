@@ -1,4 +1,4 @@
-from models.imports import *
+from models.dependencies import *
 
 
 class Projects(Base):
@@ -10,27 +10,25 @@ class Projects(Base):
     start_date: Mapped[CreateDate]
     end_date: Mapped[datetime.datetime | None]
 
-    developers: Mapped[list["Developers"]] = relationship(
+    workers: Mapped[list["Workers"]] = relationship(
         back_populates="projects",
         secondary="rel_projects_workers"
     )
-    testers: Mapped[list["Testers"]] = relationship(
-        back_populates="projects",
-        secondary="rel_projects_workers"
+    plan_blocks: Mapped[list["PlanBlocks"]] = relationship(
+        back_populates="project"
     )
-    plan_blocks: Mapped[list["PlanBlocks"]] = relationship()
 
 
 class RelProjectsWorkers(Base):
     __tablename__ = "rel_projects_workers"
 
     project_id: Mapped[int] = mapped_column(
-        ForeignKey("Projects.id"),
+        ForeignKey("projects.id"),
         primary_key=True
     )
 
-    workers_id: Mapped[int] = mapped_column(
-        ForeignKey("Workers.id"),
+    worker_id: Mapped[int] = mapped_column(
+        ForeignKey("workers.id"),
         primary_key=True
     )
     project_hire_date: Mapped[CreateDate]
