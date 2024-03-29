@@ -2,10 +2,10 @@ from models.imports import *
 
 
 class PlanBlocks(Base):
-    __tablename__ = "PlanBlocks"
+    __tablename__ = "plan_blocks"
 
     id: Mapped[IntPrimKey]
-    development_id: Mapped[int] = mapped_column(ForeignKey("Projects.id"))
+    project_id: Mapped[int] = mapped_column(ForeignKey("Projects.id"))
     developer_id: Mapped[int] = mapped_column(ForeignKey("Developers.id"))
     start_date: Mapped[CreateDate]
     deadline: Mapped[datetime.datetime]
@@ -13,7 +13,7 @@ class PlanBlocks(Base):
 
 
 class PlanBlocksTransfer(Base):
-    __tablename__ = "PlanBlocksTransfer"
+    __tablename__ = "plan_blocks_transfer"
 
     id: Mapped[IntPrimKey]
     block_id: Mapped[int] = mapped_column(ForeignKey("PlanBlocks.id"))
@@ -21,16 +21,14 @@ class PlanBlocksTransfer(Base):
     developer_id: Mapped[int] = mapped_column(ForeignKey("Developers.id"))
 
 
-# TODO: table
 class BlockTesting(Base):
-    __tablename__ = "BlocksTesting"
+    __tablename__ = "blocks_testing"
 
     id: Mapped[IntPrimKey]
 
 
-# TODO: table
 class BlockBugs(Base):
-    __tablename__ = "BlockBugs"
+    __tablename__ = "blocks_bugs"
 
     id: Mapped[IntPrimKey]
     block_id: Mapped[int] = mapped_column(ForeignKey("PlanBlocks.id"))

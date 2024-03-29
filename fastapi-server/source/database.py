@@ -3,11 +3,10 @@ from typing import Annotated
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
-# Стандартные функции (в основном с поддержкой синхронного движка)
-# Session - для создания сессий. sessionmaker упрощает сосздание сессий
-# DeclarativeBase -
-from sqlalchemy.orm import Session, sessionmaker, DeclarativeBase
-from sqlalchemy import URL, create_engine, text, String
+
+# DeclarativeBase - основа для создания ORM классов-таблиц
+from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import URL, String
 
 # Загружаем информацию о бд из config.py
 from config import settings
@@ -20,16 +19,8 @@ async_engine = create_async_engine(
     max_overflow=10
 )
 
-# Создаем синхронный движок для подключения (на выбор)
-sync_engine = create_engine(
-    url=settings.get_psycopg_URL,
-    echo=True,
-    pool_size=5,
-    max_overflow=10
-)
 
 # Session нужна для транзакций
-session_factory = sessionmaker(sync_engine)
 async_session_factory: async_sessionmaker[AsyncSession] = async_sessionmaker(async_engine)
 
 MetaStr = Annotated[str, 255]
