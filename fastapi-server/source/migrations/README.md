@@ -1,6 +1,6 @@
-Создание ревизии (миграция)
+Создание ревизии (миграция) --> в папке source
 ```
-alembic revision --autogenerate -m "Имя миграции"
+alembic -c ../alembic.ini revision --autogenerate -m "Имя миграции"
 ```
 Накатить все миграции на бд или какую-то конкретную
 ```

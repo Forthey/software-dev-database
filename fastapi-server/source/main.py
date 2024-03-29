@@ -1,7 +1,5 @@
 from fastapi import FastAPI
 
-from queries.orm import AsyncORM
-
 from routers import projects, workers
 
 # # Без изменения loop policy на винде asyncio не работает с psycopg
@@ -17,8 +15,3 @@ app = FastAPI(
 
 app.include_router(projects.router)
 app.include_router(workers.router)
-
-
-@app.post("/tmp")
-async def create_tables():
-    await AsyncORM.create_tables()
