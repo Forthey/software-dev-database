@@ -11,7 +11,7 @@ class PlanBlocks(Base):
     deadline: Mapped[datetime.datetime]
     end_date: Mapped[datetime.datetime | None]
 
-    project: Mapped["Projects"] = relationship()
+    project: Mapped["Projects"] = relationship(cascade="all,delete")
     block_transfers: Mapped[list["PlanBlocksTransfer"]] = relationship()
     blog_tests: Mapped[list["BlockTesting"]] = relationship()
     block_bugs: Mapped[list["BlockBugs"]] = relationship()
@@ -25,7 +25,7 @@ class PlanBlocksTransfer(Base):
     tester_id: Mapped[int] = mapped_column(ForeignKey("Testers.id"))
     developer_id: Mapped[int] = mapped_column(ForeignKey("Developers.id"))
 
-    block: Mapped["PlanBlocks"] = relationship()
+    block: Mapped["PlanBlocks"] = relationship(cascade="all,delete")
 
 
 class BlockTesting(Base):
@@ -33,7 +33,7 @@ class BlockTesting(Base):
 
     id: Mapped[IntPrimKey]
 
-    block: Mapped["PlanBlocks"] = relationship()
+    block: Mapped["PlanBlocks"] = relationship(cascade="all,delete")
 
 
 class BlockBugs(Base):
@@ -48,4 +48,4 @@ class BlockBugs(Base):
     fix_date: Mapped[datetime.datetime | None]
     category: Mapped[BugCategory]
 
-    block: Mapped["PlanBlocks"] = relationship()
+    block: Mapped["PlanBlocks"] = relationship(cascade="all,delete")
