@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from schemas.workers import WorkerDTO, WorkerAddDTO, WorkerWithRelDTO
+from schemas.all import WorkerDTO, WorkerAddDTO, ProjectByWorkerDTO
 from queries import workers
 
 
@@ -8,6 +8,11 @@ router = APIRouter(
     prefix="/workers",
     tags=["workers"],
 )
+
+
+@router.get("/", response_model=list[WorkerDTO])
+async def get_workers():
+    return await workers.get_workers()
 
 
 @router.post("/")
@@ -20,13 +25,18 @@ async def delete_worker(worker_id: int):
     await workers.fire_worker(worker_id)
 
 
-@router.get("/{worker_id}")
+@router.get("/{worker_id}", response_model=WorkerDTO)
 async def get_worker(worker_id: int):
     worker = await workers.get_worker(worker_id)
 
     if worker is None:
         return 404
     return worker
+
+
+@router.get("/{worker_id}/projects", response_model=list[ProjectByWorkerDTO])
+async def get_projects_from_worker(worker_id: int):
+    return await workers.get_projects_from_worker(worker_id)
 
 
 @router.post("/transfer")

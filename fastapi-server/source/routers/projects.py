@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 
-from schemas.projects import ProjectAddDTO, ProjectDTO, ProjectWithRelDTO
-from schemas.workers import WorkerDTO
+from schemas.all import ProjectAddDTO, ProjectDTO, WorkerByProjectDTO
 from queries import projects
 
 router = APIRouter(
@@ -10,14 +9,19 @@ router = APIRouter(
 )
 
 
-@router.get("/")
+@router.get("/", response_model=list[ProjectDTO])
 async def get_projects():
-    return await projects.get_active_projects()
+    return await projects.get_projects()
 
 
-@router.get("/projects/{project_id}")
+@router.get("/{project_id}", response_model=ProjectDTO)
 async def get_project(project_id: int):
     return await projects.get_project(project_id)
+
+
+@router.get("/{project_id}/workers", response_model=list[WorkerByProjectDTO])
+async def get_workers_from_project(project_id: int):
+    return await projects.get_workers_from_project(project_id)
 
 
 @router.post("/")
