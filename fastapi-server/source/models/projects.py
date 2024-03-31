@@ -1,7 +1,7 @@
 from models.dependencies import *
 
 
-class Projects(Base):
+class ProjectsORM(Base):
     __tablename__ = "projects"
 
     id: Mapped[IntPrimKey]
@@ -10,16 +10,16 @@ class Projects(Base):
     start_date: Mapped[CreateDate]
     end_date: Mapped[datetime.datetime | None]
 
-    workers: Mapped[list["Workers"]] = relationship(
+    workers: Mapped[list["WorkersORM"]] = relationship(
         back_populates="projects",
         secondary="rel_projects_workers"
     )
-    plan_blocks: Mapped[list["PlanBlocks"]] = relationship(
+    plan_blocks: Mapped[list["PlanBlocksORM"]] = relationship(
         back_populates="project"
     )
+    
 
-
-class RelProjectsWorkers(Base):
+class RelProjectsWorkersORM(Base):
     __tablename__ = "rel_projects_workers"
 
     project_id: Mapped[int] = mapped_column(

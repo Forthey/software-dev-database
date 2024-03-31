@@ -1,7 +1,7 @@
 from models.dependencies import *
 
 
-class PlanBlocks(Base):
+class PlanBlocksORM(Base):
     __tablename__ = "plan_blocks"
 
     id: Mapped[IntPrimKey]
@@ -12,22 +12,22 @@ class PlanBlocks(Base):
     deadline: Mapped[datetime.datetime]
     end_date: Mapped[datetime.datetime | None]
 
-    project: Mapped["Projects"] = relationship(
+    project: Mapped["ProjectsORM"] = relationship(
         back_populates="plan_blocks",
         cascade="all,delete"
     )
-    block_transfers: Mapped[list["PlanBlocksTransfer"]] = relationship(
+    block_transfers: Mapped[list["PlanBlocksTransferORM"]] = relationship(
         back_populates="block"
     )
-    block_testing: Mapped[list["BlockTesting"]] = relationship(
+    block_testing: Mapped[list["BlockTestingORM"]] = relationship(
         back_populates="block"
     )
-    block_bugs: Mapped[list["BlockBugs"]] = relationship(
+    block_bugs: Mapped[list["BlockBugsORM"]] = relationship(
         back_populates="block"
     )
 
 
-class PlanBlocksTransfer(Base):
+class PlanBlocksTransferORM(Base):
     __tablename__ = "plan_blocks_transfer"
 
     id: Mapped[IntPrimKey]
@@ -36,12 +36,12 @@ class PlanBlocksTransfer(Base):
     developer_id: Mapped[int] = mapped_column(ForeignKey("workers.id"))
     date: Mapped[CreateDate]
 
-    block: Mapped["PlanBlocks"] = relationship(
+    block: Mapped["PlanBlocksORM"] = relationship(
         back_populates="block_transfers"
     )
 
 
-class BlockTesting(Base):
+class BlockTestingORM(Base):
     __tablename__ = "blocks_testing"
 
     id: Mapped[IntPrimKey]
@@ -50,12 +50,12 @@ class BlockTesting(Base):
     start_date: Mapped[CreateDate]
     end_date: Mapped[datetime.datetime]
 
-    block: Mapped["PlanBlocks"] = relationship(
+    block: Mapped["PlanBlocksORM"] = relationship(
         back_populates="block_testing"
     )
 
 
-class BlockBugs(Base):
+class BlockBugsORM(Base):
     __tablename__ = "blocks_bugs"
 
     id: Mapped[IntPrimKey]
@@ -68,7 +68,7 @@ class BlockBugs(Base):
     fix_date: Mapped[datetime.datetime | None]
     category: Mapped[BugCategory]
 
-    block: Mapped["PlanBlocks"] = relationship(
+    block: Mapped["PlanBlocksORM"] = relationship(
         back_populates="block_bugs",
         cascade="all,delete"
     )

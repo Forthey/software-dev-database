@@ -1,7 +1,7 @@
 from models.dependencies import *
 
 
-class Workers(Base):
+class WorkersORM(Base):
     __tablename__ = "workers"
 
     id: Mapped[IntPrimKey]
@@ -20,7 +20,7 @@ class Workers(Base):
     overdue_count: Mapped[int] = 0
     level: Mapped[Level]
 
-    projects: Mapped[list["Projects"]] = relationship(
+    projects: Mapped[list["ProjectsORM"]] = relationship(
         back_populates="workers",
         secondary="rel_projects_workers"
     )
