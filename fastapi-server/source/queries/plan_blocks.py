@@ -7,26 +7,25 @@ from sqlalchemy.ext.asyncio import AsyncSession
 # сначала выбирает "левые" строки, а затем подгружает соответсвующие им "правые" строки
 from sqlalchemy.orm import joinedload, selectinload
 
-from database import Base, async_engine, async_session_factory
-from models.workers import Workers, Developers, Testers
-from models.projects import Projects, RelProjectsWorkers
-from models.plan_blocks import PlanBlocks, BlockTesting, BlockBugs, PlanBlocksTransfer
+from engine import async_session_factory
+from models.workers import WorkersORM
+from models.projects import ProjectsORM, RelProjectsWorkersORM
+from models.plan_blocks import PlanBlocksORM, BlockTestingORM, BlockBugsORM, PlanBlocksTransferORM
 
-from schemas.workers import WorkerByProjectDTO
-from schemas.projects import ProjectAddDTO, ProjectDTO
+from schemas.all import PlanBlockAddDTO
 
 from new_types import BugCategory, Level, SpecializationCode
 
 
-async def get_plan_blocks(project_id: int) -> Sequence[PlanBlocks]:
+async def get_plan_blocks(project_id: int) -> Sequence[PlanBlocksORM]:
     session: AsyncSession
     with async_session_factory() as session:
         # TODO: I'll leave it here for a while, mask %thing%
-        # PlanBlocks.development_id.contains("thing")
+        # PlanBlocksORM.development_id.contains("thing")
         query = (
-            select(PlanBlocks)
-            .where(PlanBlocks.project_id == project_id)
-            .group_by(PlanBlocks.id)
+            select(PlanBlocksORM)
+            .where(PlanBlocksORM.project_id == project_id)
+            .group_by(PlanBlocksORM.id)
         )
         result = await session.execute(query)
         plan_blocks = result.scalars().all()

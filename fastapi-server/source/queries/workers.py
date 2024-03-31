@@ -10,21 +10,32 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.sql.functions import count
 
-from database import Base, async_engine, async_session_factory
-from models.workers import Workers
-from models.projects import Projects, RelProjectsWorkers
-from models.plan_blocks import PlanBlocks, BlockTesting, BlockBugs, PlanBlocksTransfer
+from engine import async_session_factory
+from models.workers import WorkersORM
+from models.projects import ProjectsORM, RelProjectsWorkersORM
+from models.plan_blocks import PlanBlocksORM, BlockTestingORM, BlockBugsORM, PlanBlocksTransferORM
 
-from schemas.workers import WorkerDTO, WorkerAddDTO
-from schemas.projects import ProjectAddDTO, ProjectDTO
+from schemas.all import WorkerAddDTO, WorkerDTO, ProjectByWorkerDTO
 
 from new_types import BugCategory, Level, SpecializationCode
+
+
+async def get_workers() -> list[WorkerDTO]:
+    session: AsyncSession
+    async with async_session_factory() as session:
+        query = (
+            select(WorkersORM).where(WorkersORM.fire_date == None)
+        )
+
+        workers_orm = (await session.execute(query)).scalars().all()
+
+        return [WorkerDTO.model_validate(worker_orm, from_attributes=True) for worker_orm in workers_orm]
 
 
 async def add_worker(worker: WorkerAddDTO):
     session: AsyncSession
     async with async_session_factory() as session:
-        worker_orm = Workers(
+        worker_orm = WorkersORM(
             **worker.dict()
         )
 
@@ -37,7 +48,7 @@ async def get_worker(worker_id: int) -> WorkerDTO:
     session: AsyncSession
     async with async_session_factory() as session:
         query = (
-            select(Workers).where(Workers.id == worker_id)
+            select(WorkersORM).where(WorkersORM.id == worker_id)
         )
 
         result = await session.execute(query)
@@ -47,13 +58,38 @@ async def get_worker(worker_id: int) -> WorkerDTO:
         return worker_dto
 
 
+async def get_projects_from_worker(worker_id: int) -> list[ProjectByWorkerDTO]:
+    session: AsyncSession
+    async with async_session_factory() as session:
+        projects_query = (
+            select(ProjectsORM.__table__.columns,
+                   RelProjectsWorkersORM.project_hire_date,
+                   RelProjectsWorkersORM.project_fire_date)
+            .select_from(RelProjectsWorkersORM)
+            .where(RelProjectsWorkersORM.worker_id == worker_id and RelProjectsWorkersORM.project_fire_date == None)
+            .join(ProjectsORM, RelProjectsWorkersORM.project_id == ProjectsORM.id)
+        )
+
+        result = await session.execute(projects_query)
+
+        projects_orm = result.all()
+
+        print(f"{projects_orm=}")
+        workers_dto = [ProjectByWorkerDTO.model_validate(project_orm, from_attributes=True) for project_orm in
+                       projects_orm]
+
+        await session.commit()
+
+        return workers_dto
+
+
 async def fire_worker(worker_id: int) -> str:
     session: AsyncSession
     async with async_session_factory() as session:
         query = (
-            update(Workers)
-            .where(Workers.id == worker_id)
-            .values(fire_date=datetime.datetime.now(datetime.UTC)).returning(Workers.email)
+            update(WorkersORM)
+            .where(WorkersORM.id == worker_id)
+            .values(fire_date=datetime.datetime.now(datetime.UTC)).returning(WorkersORM.email)
         )
 
         result = await session.execute(query)
@@ -67,12 +103,12 @@ async def transfer_worker(worker_id: int, new_project_id: int, old_project_id: i
     session: AsyncSession
     async with async_session_factory() as session:
         get_new_project_query = (
-            select(Projects)
-            .options(selectinload(Projects.workers))
+            select(ProjectsORM)
+            .options(selectinload(ProjectsORM.workers))
             .filter_by(id=new_project_id)
         )
         get_worker_query = (
-            select(Workers)
+            select(WorkersORM)
             .filter_by(id=worker_id)
         )
 
@@ -83,10 +119,10 @@ async def transfer_worker(worker_id: int, new_project_id: int, old_project_id: i
 
         if old_project_id is None:
             count_projects_query = (
-                select(count()).select_from(RelProjectsWorkers)
+                select(count()).select_from(RelProjectsWorkersORM)
                 .where(
-                    RelProjectsWorkers.worker_id == worker_id and
-                    RelProjectsWorkers.project_hire_date is not None)
+                    RelProjectsWorkersORM.worker_id == worker_id and
+                    RelProjectsWorkersORM.project_hire_date is not None)
             )
 
             count_result = (await session.execute(count_projects_query)).first()[0]
@@ -95,29 +131,14 @@ async def transfer_worker(worker_id: int, new_project_id: int, old_project_id: i
                 return
 
         else:
-            # end_project_query = (
-            #     update(RelProjectsWorkers)
-            #     .where(
-            #         RelProjectsWorkers.project_id == old_project_id and
-            #         RelProjectsWorkers.worker_id == worker_id)
-            #     .values(project_fire_date=datetime.datetime.now(datetime.UTC))
-            # )
-            #
-            # await session.execute(end_project_query)
-            get_old_project_query = (
-                select(Projects)
-                .options(selectinload(Projects.workers))
-                .filter_by(id=old_project_id)
+            end_project_query = (
+                update(RelProjectsWorkersORM)
+                .where(
+                    RelProjectsWorkersORM.project_id == old_project_id and
+                    RelProjectsWorkersORM.worker_id == worker_id)
+                .values(project_fire_date=datetime.datetime.now(datetime.UTC))
             )
 
-            old_project = (await session.execute(get_old_project_query)).scalar_one()
-
-            old_project.workers.remove(worker)
-
-        # start_project_query = (
-        #     insert(RelProjectsWorkers).values(worker_id=worker_id, project_id=new_project_id)
-        # )
-        #
-        # await session.execute(start_project_query)
+            await session.execute(end_project_query)
 
         await session.commit()

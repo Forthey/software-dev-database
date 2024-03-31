@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import select, func, Sequence, update
+from sqlalchemy import select, func, update, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # joinedload подходит только к many-to-one и one-to-one загрузке
@@ -9,26 +9,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 # сначала выбирает "левые" строки, а затем подгружает соответсвующие им "правые" строки
 from sqlalchemy.orm import joinedload, selectinload
 
-from database import Base, async_engine, async_session_factory
-from models.workers import Workers
-from models.projects import Projects, RelProjectsWorkers
-from models.plan_blocks import PlanBlocks, BlockTesting, BlockBugs, PlanBlocksTransfer
+from engine import async_session_factory
+from models.workers import WorkersORM
+from models.projects import ProjectsORM, RelProjectsWorkersORM
+from models.plan_blocks import PlanBlocksORM, BlockTestingORM, BlockBugsORM, PlanBlocksTransferORM
 
-from schemas.projects import ProjectAddDTO, ProjectDTO, ProjectWithRelDTO
-from schemas.workers import WorkerDTO
-from schemas.plan_blocks import PlanBlockDTO
 
-# from schemas.all_schemas import ProjectAddDTO, ProjectDTO, ProjectWithRelDTO
+from schemas.all import ProjectAddDTO, ProjectDTO, WorkerByProjectDTO
 
 from new_types import BugCategory, Level, SpecializationCode
-
-ProjectWithRelDTO.model_rebuild()
 
 
 async def add_project(project: ProjectAddDTO):
     session: AsyncSession
     async with async_session_factory() as session:
-        project_orm = Projects(
+        project_orm = ProjectsORM(
             **project.dict()
         )
 
@@ -41,14 +36,14 @@ async def close_project(project_id: int):
     session: AsyncSession
     async with async_session_factory() as session:
         project_query = (
-            update(Projects)
-            .where(Projects.id == project_id)
+            update(ProjectsORM)
+            .where(ProjectsORM.id == project_id)
             .values(end_date=datetime.datetime.now(datetime.UTC))
         )
 
         workers_query = (
-            update(RelProjectsWorkers)
-            .where(RelProjectsWorkers.project_id == project_id)
+            update(RelProjectsWorkersORM)
+            .where(RelProjectsWorkersORM.project_id == project_id)
             .values(project_fire_date=datetime.datetime.now(datetime.UTC))
         )
 
@@ -56,11 +51,11 @@ async def close_project(project_id: int):
         await session.execute(workers_query)
 
 
-async def get_active_projects() -> list[ProjectDTO]:
+async def get_projects() -> list[ProjectDTO]:
     session: AsyncSession
     async with async_session_factory() as session:
         query = (
-            select(Projects).where(Projects.end_date == None)
+            select(ProjectsORM)
         )
 
         result = await session.execute(query)
@@ -70,39 +65,49 @@ async def get_active_projects() -> list[ProjectDTO]:
         return projects_dto
 
 
-async def get_project(project_id: int):
+async def get_project(project_id: int) -> ProjectDTO:
     session: AsyncSession
     async with async_session_factory() as session:
-        # query = (
-        #     select(RelProjectsWorkers.project_hire_date, RelProjectsWorkers.project_fire_date, Workers)
-        #     .where(RelProjectsWorkers.project_id == project_id)
-        #     .join(Workers, RelProjectsWorkers.worker_id == Workers.id)
-        # )
-        # Альтернатива из урока
-        query = (
-            select(Projects)
-            .where(Projects.id == project_id)
-            .options(selectinload(Projects.workers))
-            .options(selectinload(Projects.plan_blocks))
+
+        project_orm = await session.get(ProjectsORM, project_id)
+
+        project_dto = ProjectDTO.model_validate(project_orm, from_attributes=True)
+
+        await session.commit()
+
+        return project_dto
+
+
+async def get_workers_from_project(project_id: int) -> list[WorkerByProjectDTO]:
+    session: AsyncSession
+
+    async with async_session_factory() as session:
+        workers_query = (
+            select(WorkersORM.__table__.columns, RelProjectsWorkersORM.project_hire_date, RelProjectsWorkersORM.project_fire_date)
+            .select_from(RelProjectsWorkersORM)
+            .where(RelProjectsWorkersORM.project_id == project_id and RelProjectsWorkersORM.project_fire_date == None)
+            .join(WorkersORM, RelProjectsWorkersORM.worker_id == WorkersORM.id)
         )
 
-        result = await session.execute(query)
+        result = await session.execute(workers_query)
 
-        project = result.scalars().one()
-        print(f"{project=}")
+        workers_orm = result.all()
 
-        print(f"{project.workers=}")
-        workers_by_project_dto = ProjectWithRelDTO.model_validate(project, from_attributes=True)
+        print(f"{workers_orm=}")
+        workers_dto = [WorkerByProjectDTO.model_validate(worker_orm, from_attributes=True) for worker_orm in workers_orm]
 
-        return workers_by_project_dto
+        await session.commit()
+
+        return workers_dto
 
 
 async def update_project_description(project_id: int, description: str) -> bool:
     with async_session_factory() as session:
         query = (
-            update(Projects).where(Projects.id == project_id).values(description=description)
+            update(ProjectsORM).where(ProjectsORM.id == project_id).values(description=description)
         )
         await session.execute(query)
+
         await session.commit()
 
     return True
