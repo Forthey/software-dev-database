@@ -4,7 +4,7 @@ This file contains workers-related pydantic schemas
 Available schemas are
 1. WorkerAddDTO
 2. WorkerDTO
-3. Workers
+3. WorkersORM
 """
 from pydantic import BaseModel
 import datetime
@@ -32,11 +32,6 @@ class WorkerDTO(WorkerAddDTO):
     fire_date: datetime.datetime | None
     fire_reason: DetailedInfoStr | None
     overdue_count: int = 0
-
-
-class WorkerWithRelDTO(WorkerDTO):
-    projects: list["ProjectDTO"]
-    plan_blocks: list["PlanBlockDTO"]
 
 
 class WorkerByProjectDTO(WorkerDTO):

@@ -25,6 +25,6 @@ class ProjectDTO(ProjectAddDTO):
     end_date: datetime.datetime | None
 
 
-class ProjectWithRelDTO(ProjectDTO):
-    workers: list["WorkerDTO"]
-    plan_blocks: list["PlanBlockDTO"]
+class ProjectByWorkerDTO(ProjectDTO):
+    project_hire_date: datetime.datetime
+    project_fire_date: datetime.datetime | None
