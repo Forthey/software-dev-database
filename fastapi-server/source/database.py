@@ -1,27 +1,11 @@
 # Функции для работы с асинхронным движком
 from typing import Annotated
 
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-
 
 # DeclarativeBase - основа для создания ORM классов-таблиц
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import URL, String
+from sqlalchemy import String
 
-# Загружаем информацию о бд из config.py
-from config import settings
-
-# Создаем асинхронный движок для подключения к postgres
-async_engine = create_async_engine(
-    url=settings.get_psycopg_URL,
-    echo=True,
-    pool_size=5,
-    max_overflow=10
-)
-
-
-# Session нужна для транзакций
-async_session_factory: async_sessionmaker[AsyncSession] = async_sessionmaker(async_engine)
 
 MetaStr = Annotated[str, 255]
 DetailedInfoStr = Annotated[str, 2000]
