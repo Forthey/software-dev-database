@@ -1,0 +1,6 @@
+.ProjectsList {
+    display: grid;
+    place-items: center;
+    margin-left: 10vw;
+    width: 80vw;
+}

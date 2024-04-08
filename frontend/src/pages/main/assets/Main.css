@@ -1,0 +1,76 @@
+.Main {
+    display: block;
+    align-items: center;
+}
+
+.CompanyName {
+    margin-top: 20vh;
+    text-align: center;
+    font-weight: bold;
+    font-size: 10vw;
+    transition: 1s;
+    color: #919191;
+
+    &:hover {
+        font-size: 11vw;
+        color: white;
+    }
+}
+
+
+.About {
+    margin-top: 15vh;
+    text-align: center;
+    margin-left: 20%;
+    width: 60%;
+    font-size: 2vw;
+    color: #919191;
+    transition: 1s;
+
+    &:hover {
+        color: white;
+    }
+}
+
+
+.Buttons {
+    margin: 10vh 0 30vh 0;
+    display: flex;
+    justify-content: center;
+}
+
+.Main button {
+    margin: 0 1vw 0 1vw;
+    width: 20vw;
+    height: 5vh;
+    border: none;
+    border-radius: 1vw;
+
+    font-family: monospace;
+    font-size: 150%;
+    transition: all .3s;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+
+    &:before {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 0;
+        height: 100%;
+        background-color: gray;
+        transition: all .3s;
+        border-radius: 1vw;
+        z-index: -1;
+    }
+
+    &:hover {
+        color: white; /* Цвет текста при наведении */
+
+        &:before {
+            width: 100%; /* Заполнение всей кнопки цветом при наведении */
+        }
+    }
+}

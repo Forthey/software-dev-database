@@ -1,0 +1,33 @@
+.ProjectsCard {
+    background-color: white;
+    border-radius: 1vw;
+    margin: 2% 0 2% 0;
+    width: 90%;
+    height: 20vh;
+
+    display: block;
+    transition: 0.5s;
+}
+
+.ProjectsCard:hover {
+    width: 91%;
+    height: 20.5vh;
+}
+
+.ProjectsCard .Title {
+    height: 20%;
+    border-bottom-style: solid;
+}
+
+.ProjectsCard .Title .Text {
+    align-self: center;
+    margin: 1vh 0 1vh 3vw;
+    font-weight: bold;
+}
+
+.ProjectsCard .Description {
+}
+
+.ProjectsCard .Description .Text {
+    margin: 1vh 1vw 1vh 1vw;
+}
