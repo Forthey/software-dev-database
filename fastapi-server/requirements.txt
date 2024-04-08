@@ -1,0 +1,12 @@
+alembic==1.13.1
+
+sqlalchemy==2.0.28
+psycopg==3.1.18
+psycopg-binary==3.1.18
+
+fastapi==0.110.0
+uvicorn[standart]==0.28.0
+pydantic-settings==2.2.1
+pydantic==2.6.3
+
+black==24.3.0
