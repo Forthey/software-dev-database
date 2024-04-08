@@ -21,6 +21,7 @@ from database import Base
 # access to the values within the .ini file in use.
 config = context.config
 
+# TODO: change to Ubuntu later
 asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 # Interpret the config file for Python logging.
