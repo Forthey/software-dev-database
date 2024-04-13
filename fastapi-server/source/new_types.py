@@ -17,3 +17,8 @@ class BugCategory(enum.IntEnum):
     minor = 0
     serious = 1
     showstopper = 2
+
+
+class ResultInfo(enum.IntEnum):
+    success = 0
+    failure = 1

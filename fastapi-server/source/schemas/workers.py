@@ -4,7 +4,7 @@ This file contains workers-related pydantic schemas
 Available schemas are
 1. WorkerAddDTO
 2. WorkerDTO
-3. WorkersORM
+3. WorkerByProjectDTO
 """
 from pydantic import BaseModel
 import datetime
@@ -15,14 +15,10 @@ from new_types import BugCategory, Level, SpecializationCode
 
 class WorkerAddDTO(BaseModel):
     specialization_code: SpecializationCode
-    passport_number: MetaStr
     username: MetaStr
     name: MetaStr
     surname: MetaStr
-    patronymic: MetaStr | None
     email: MetaStr
-    phone_number: MetaStr | None
-    birthday: datetime.datetime | None
     level: Level
 
 
