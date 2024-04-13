@@ -1,11 +1,16 @@
-.HomeButton {
-    position: fixed;
-    width: 3vw;
-    height: 3vw;
-    margin: 1vw 0 0 1vw;
-    border-radius: 0.5vw;
+
+.AddButton {
+    width: 6vw;
+    height: 3vh;
+    background-color: #00f600;
     border: 0.01vw solid black;
-    background-color: white;
+    border-radius: 1vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    transition: all .3s;
+    position: relative;
     overflow: hidden;
     z-index: 1;
 
@@ -16,19 +21,22 @@
         left: 0;
         width: 0;
         height: 100%;
-        background-color: gray;
+        background-color: #8ef18e;
         transition: all .3s;
-        border-radius: 0.5vw;
+        border-radius: 1vw;
         z-index: -1;
     }
 
     &:hover {
+        width: 6.5vw;
+        height: 3.15vh;
+
         &:before {
             width: 100%; /* Заполнение всей кнопки цветом при наведении */
         }
     }
 }
 
-.HomeButton img {
-    width: 100%;
+.AddButton .AddIcon {;
+    height: 60%;
 }

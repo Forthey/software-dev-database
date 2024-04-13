@@ -7,25 +7,35 @@
 
     display: block;
     transition: 0.5s;
+
+    &:hover {
+        width: 91%;
+        height: 20.5vh;
+    }
 }
 
-.ProjectsCard:hover {
-    width: 91%;
-    height: 20.5vh;
+.Closed {
+    background-color: gray;
 }
 
 .ProjectsCard .Title {
+    display: flex;
+    justify-content: space-between;
     height: 20%;
     border-bottom-style: solid;
 }
 
+.ProjectsCard .DeleteButton {
+    margin-top: 0.5vh;
+}
+
 .ProjectsCard .Title .Text {
-    align-self: center;
     margin: 1vh 0 1vh 3vw;
     font-weight: bold;
 }
 
 .ProjectsCard .Description {
+    height: 80%;
 }
 
 .ProjectsCard .Description .Text {

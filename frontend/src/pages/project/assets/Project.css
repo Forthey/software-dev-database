@@ -1,0 +1,39 @@
+.ProjectPage {
+    display: block;
+    justify-content: center;
+
+    & p {
+        text-align: center;
+        color: white;
+    }
+
+    & .Title {
+        width: 101%;
+        padding: 5vh 0 5vh 0;
+        border-bottom: 4px solid gray;
+
+        & .Name {
+            font-size: 3vw;
+            transition: 0.5s;
+            &:hover {
+                font-size: 3.2vw;
+            }
+        }
+    }
+
+    & .Body {
+        width: 101%;
+        padding: 5vh 0 5vh 0;
+        border-bottom: 2px solid gray;
+    }
+
+    & .Description {
+        margin-left: 2vw;
+        font-size: 1.8vw;
+        transition: 0.5s;
+
+        &:hover {
+            font-size: 1.9vw;
+        }
+    }
+}

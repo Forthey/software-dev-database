@@ -1,0 +1,77 @@
+.PlanBlocksDropList {
+    & .PlanBlockForm {
+        padding: 1vh 0 1vh 0;
+        border-top: 2px solid white;
+        height: 4vh;
+
+        display: flex;
+        justify-content: space-between;
+        & input {
+            border-radius: 1vw;
+            border: 1px solid white;
+            background: black;
+            color: white;
+            width: 25%;
+            margin: 0 5% 0 5%;
+        }
+
+        & .DefaultButton {
+            height: 3.7vh;
+        }
+    }
+
+    & .PlanBlockDeadline::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+    }
+
+    & .PlanBlocksTable {
+        display: grid;
+        width: 100%;
+        color: white;
+
+        border-top: 2px solid white;
+
+        & p+p {
+            border-left: 2px solid white;
+        }
+
+        & .PlanBlocksTableHead{
+            display: flex;
+            border-bottom: 2px solid white;
+
+            & p {
+                padding: 1vh 0 1vh 0;
+                font-weight: bold;
+                width: 100%;
+            }
+        }
+
+        & .PlanBlocksTableBody {
+            display: grid;
+
+            & .PlanBlocksTableRow {
+                display: flex;
+
+                & p {
+                    padding: 0.5vh 0 0.5vh 0;
+                    width: 100%;
+
+                    transition: all 0.5s;
+
+                    &:hover {
+                        background-color: #1e1f22;
+                    }
+                }
+            }
+        }
+        /*border: 2px solid white;*/
+        & . {
+            border-left: 2px solid white;
+        }
+    }
+
+    /*& .PlanBlockRow {*/
+    /*    border-top: 2px solid white;*/
+    /*    color: white;*/
+    /*}*/
+}

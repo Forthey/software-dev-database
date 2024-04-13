@@ -1,0 +1,27 @@
+.WorkerPage {
+    display: grid;
+    place-items: center;
+    color: white;
+    text-align: center;
+
+    & .Title {
+        padding: 1vh 0 1vh 0;
+        width: 100%;
+        border-bottom: 2px solid white;
+        & p {
+            font-weight: bold;
+            font-size: 3vw;
+        }
+    }
+
+    & .Body {
+        padding: 1vh 0 1vh 0;
+        width: 100%;
+
+        border-bottom: 2px solid white;
+
+        & p {
+            font-size: 2vw;
+        }
+    }
+}

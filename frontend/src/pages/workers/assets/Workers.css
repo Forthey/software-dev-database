@@ -1,0 +1,8 @@
+.WorkersPage {
+    display: grid;
+    place-items: center;
+
+    & .AddButton {
+        margin: 2vh 0 2vh 0;
+    }
+}

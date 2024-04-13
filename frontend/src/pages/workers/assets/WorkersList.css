@@ -1,0 +1,6 @@
+.WorkersList {
+    display: flex; /* Используем Flexbox */
+    flex-wrap: wrap; /* Позволяет элементам переноситься на следующую строку */
+    justify-content: space-between;
+    width: 90vw;
+}

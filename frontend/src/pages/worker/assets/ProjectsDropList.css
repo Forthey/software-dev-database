@@ -1,0 +1,51 @@
+.ProjectsDropList {
+    width: 100%;
+    display: grid;
+    place-items: center;
+
+    & .ProjectsTable {
+        width: 100%;
+        & .ProjectsTableHead {
+            display: flex;
+            justify-content: space-between;
+
+            & p {
+                width: 25%;
+                height: 4vh;
+                font-weight: bold;
+            }
+        }
+
+        & .ProjectsTableRow {
+            display: flex;
+            justify-content: space-between;
+
+            & p {
+                width: 25%;
+                height: 3vh;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                overflow: hidden;
+
+                transition: all 0.5s;
+
+                &:hover {
+                    background: #1e1f22;
+                }
+            }
+
+            & div {
+                width: 25%;
+                display: flex;
+                justify-content: space-between;
+
+                & input {
+                    color: white;
+                    border-radius: 1vw;
+                    border: 1px solid white;
+                    background: black;
+                }
+            }
+        }
+    }
+}

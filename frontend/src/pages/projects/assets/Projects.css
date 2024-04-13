@@ -1,0 +1,8 @@
+.ProjectsPage {
+    display: grid;
+    place-items: center;
+
+    & .AddButton {
+        margin: 2vh 0 0 0;
+    }
+}

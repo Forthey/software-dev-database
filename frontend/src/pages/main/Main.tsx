@@ -1,5 +1,6 @@
 import "./assets/Main.css"
 import {useNavigate} from "react-router";
+import TextButton from "../../components/TextButton.tsx";
 
 
 function Main() {
@@ -18,8 +19,8 @@ function Main() {
             <div className="CompanyName">Forthey Group</div>
             <div className="About">Мы занимаемся разработкой B2B программного обеспечения уже 5 недель. Наш персонал включает в себя отборных бездарей, а наши проекты покоряют самые днища возможностей</div>
             <div className="Buttons">
-                <button className="Projects" type="button" onClick={projectsNavigate}>Проекты</button>
-                <button className="Workers" type="button" onClick={workersNavigate}>Персонал</button>
+                <TextButton text="Проекты" onClick={projectsNavigate} />
+                <TextButton text="Персонал" onClick={workersNavigate} />
             </div>
         </div>
     )

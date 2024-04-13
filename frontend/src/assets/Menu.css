@@ -1,0 +1,12 @@
+#Menu {
+    position: sticky;
+    display: flex;
+    justify-content: space-between;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 8vh;
+    margin-bottom: 2vh;
+    z-index: 100;
+}

@@ -24,6 +24,8 @@
     resize: vertical;
     padding: 0.8vw;
 
+    font-size: 1.2vw;
+    height: 3vw;
     color: black;
 
     transition: all 0.3s;
@@ -35,14 +37,23 @@
     }
 }
 
-.AddProjectForm .Name {
+
+.AddProjectForm select {
+    appearance: none;
+    width: 40%;
+    height: 5vh;
+    margin: 1vw 0 0 1vw;
+    border-radius: 1vw;
+    text-align: center;
     font-size: 1.2vw;
-    height: 3vw;
+    transition: all 0.5s;
+
+    &:focus {
+        color: white;
+        background-color: black;
+    }
 }
 
-.AddProjectForm .Description {
-    height: 9vh;
-}
 
 .AddProjectForm .SubmitButton {
     width: 10%;

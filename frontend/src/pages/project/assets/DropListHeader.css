@@ -1,0 +1,16 @@
+.DropListHeader {
+    display: grid;
+    place-items: center;
+
+
+    & .AddButton {
+        margin: 1vh 0 1vh 0;
+    }
+
+    & .HeaderTitle {
+        font-size: 2.5vw;
+        width: 100%;
+        padding: 2vh 0 2vh 0;
+        border-bottom: 2px solid white;
+    }
+}

@@ -1,0 +1,94 @@
+.WorkerCard {
+    background-color: white;
+    border-radius: 1vw;
+    margin: 0 2% 4% 2%;
+    width: 45%;
+    height: 20vh;
+    display: block;
+    transition: 0.5s;
+
+    align-items: center;
+
+    &:hover {
+        width: 45.6%;
+        height: 20.5vh;
+    }
+}
+
+.Closed {
+    background-color: gray;
+}
+
+.WorkerCard > p {
+    text-align: center;
+    margin-bottom: 1.8%;
+}
+
+.WorkerCard > div {
+    text-align: center;
+    margin-bottom: 1.8%;
+}
+
+.WorkerCard .Header {
+    padding: 0.5vh 0 0.5vh 0;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid black;
+}
+
+.WorkerCard .Header .Username {
+    margin-left: 5%;
+    text-align: center;
+    font-weight: bold;
+}
+
+.WorkerCard .FIO {
+    font-style: italic;
+}
+
+.WorkerCard .Email {
+    font-family: monospace;
+}
+
+.WorkerCard .LevelSpec {
+    font-family: monospace;
+}
+
+.WorkerCard .Overdue {
+    display: flex;
+    justify-content: center;
+}
+
+.WorkerCard .Overdue .Min {
+    color: green;
+}
+
+.WorkerCard .Overdue .Max {
+    color: red;
+}
+
+.WorkerCard .Overdue input[type='range'] {
+    appearance: none;
+    margin-top: 1vh;
+    height: 1vh;
+    background: linear-gradient(50deg, green, red);
+
+    &::-webkit-slider-thumb {
+        appearance: none;
+        width: 0.2vh;
+        height: 1.5vh;
+        background: black;
+    }
+
+    &::-ms-track {
+        background: transparent;
+    }
+
+    &::-ms-fill-lower {
+        background: #007acc; /* Цвет нижней части ползунка */
+    }
+
+    &::-ms-fill-upper {
+        background: #007acc; /* Цвет верхней части ползунка */
+    }
+}
