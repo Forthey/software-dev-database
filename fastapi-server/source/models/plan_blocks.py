@@ -48,7 +48,8 @@ class BlockTestingORM(Base):
     block_id: Mapped[int] = mapped_column(ForeignKey("plan_blocks.id"))
     tester_id: Mapped[int] = mapped_column(ForeignKey("workers.id"))
     start_date: Mapped[CreateDate]
-    end_date: Mapped[datetime.datetime]
+    end_date: Mapped[datetime.datetime | None]
+    deadline: Mapped[datetime.datetime]
 
     block: Mapped["PlanBlocksORM"] = relationship(
         back_populates="block_testing"
