@@ -28,3 +28,9 @@ class ProjectDTO(ProjectAddDTO):
 class ProjectByWorkerDTO(ProjectDTO):
     project_hire_date: datetime.datetime
     project_fire_date: datetime.datetime | None
+
+
+class ProjectOnCloseDTO(BaseModel):
+    project_id: int
+    workers_id: list[int]
+    plan_blocks_id: list[int]

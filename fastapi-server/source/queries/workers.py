@@ -1,13 +1,14 @@
 import datetime
 
-from sqlalchemy import select, update, func, Sequence, insert, and_
+from sqlalchemy import select, update, func, Sequence, insert, and_, or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # joinedload подходит только к many-to-one и one-to-one загрузке
 # (так как, если "правых" строк больше, при join левые будут дублироваться (а это первичный ключ, такое))
 # selectin подходит для one-to-many и many-to-many, так как делает два запроса:
 # сначала выбирает "левые" строки, а затем подгружает соответсвующие им "правые" строки
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import joinedload, selectinload, Session
 from sqlalchemy.sql.functions import count
 
 from engine import async_session_factory
@@ -17,7 +18,8 @@ from models.plan_blocks import PlanBlocksORM, BlockTestingORM, BlockBugsORM, Pla
 
 from schemas.all import WorkerAddDTO, WorkerDTO, ProjectByWorkerDTO
 
-from new_types import BugCategory, Level, SpecializationCode, ResultInfo
+from new_types import BugCategory, Level, SpecializationCode
+from schemas.workers import WorkerOnFireDTO
 
 
 async def get_workers() -> list[WorkerDTO]:
@@ -32,17 +34,12 @@ async def get_workers() -> list[WorkerDTO]:
         return [WorkerDTO.model_validate(worker_orm, from_attributes=True) for worker_orm in workers_orm]
 
 
-async def get_worker(worker_id: int) -> WorkerDTO:
+async def get_worker(worker_id: int) -> WorkerDTO | None:
     session: AsyncSession
     async with async_session_factory() as session:
-        query = (
-            select(WorkersORM).where(WorkersORM.id == worker_id)
-        )
+        worker_orm = await session.get(WorkersORM, worker_id)
 
-        result = await session.execute(query)
-        worker = result.scalar_one_or_none()
-
-        return WorkerDTO.model_validate(worker, from_attributes=True)
+        return WorkerDTO.model_validate(worker_orm, from_attributes=True) if worker_orm else None
 
 
 async def search_workers(username_mask: str) -> list[WorkerDTO]:
@@ -58,63 +55,115 @@ async def search_workers(username_mask: str) -> list[WorkerDTO]:
         return [WorkerDTO.model_validate(worker, from_attributes=True) for worker in workers_orm]
 
 
-async def add_worker(worker: WorkerAddDTO) -> ResultInfo:
+async def add_worker(worker: WorkerAddDTO) -> int | None:
     session: AsyncSession
     async with async_session_factory() as session:
-        query = (
-            select(WorkersORM)
-            .where(worker.username == WorkersORM.username)
-        )
+        try:
+            query = (
+                insert(WorkersORM)
+                .values(**worker.model_dump())
+            )
 
-        if (await session.execute(query)).all():
+            worker_id = (await session.execute(query)).scalar_one()
+
             await session.commit()
-            return ResultInfo.failure
-
-        worker_orm = WorkersORM(
-            **worker.dict()
-        )
-
-        session.add(worker_orm)
-
-        await session.commit()
-
-        return ResultInfo.success
+            return worker_id
+        except IntegrityError:
+            return None
 
 
-# TODO возвращать работника и писать ему письмо о том, что он уволен
-async def fire_worker(worker_id: int) -> ResultInfo:
+async def fire_worker(worker_id: int) -> WorkerOnFireDTO | None:
     session: AsyncSession
     async with async_session_factory() as session:
         query = (
             update(WorkersORM)
             .where(WorkersORM.id == worker_id)
             .values(fire_date=datetime.datetime.now(datetime.UTC))
-            .returning(WorkersORM)
+            .returning(WorkersORM.id, WorkersORM.email)
         )
 
-        result = await session.execute(query)
+        [worker_id, email] = (await session.execute(query)).scalars().all()
+
+        if worker_id is None:
+            return None
+
+        plan_blocks_query = (
+            update(PlanBlocksORM)
+            .where(PlanBlocksORM.developer_id == worker_id)
+            .values(end_date=datetime.datetime.now(datetime.UTC))
+            .returning(PlanBlocksORM.id)
+        )
+
+        plan_blocks_id = (await session.execute(plan_blocks_query)).scalars().all()
+
+        projects_query = (
+            update(RelProjectsWorkersORM)
+            .where(RelProjectsWorkersORM.worker_id == worker_id)
+            .values(project_fire_date=datetime.datetime.now(datetime.UTC))
+            .returning(RelProjectsWorkersORM.project_id)
+        )
+        block_testing_query = (
+            update(BlockTestingORM)
+            .where(BlockTestingORM.block_id.in_(plan_blocks_id))
+            .values(end_date=datetime.datetime.now(datetime.UTC))
+            .returning(BlockTestingORM.id)
+        )
+        block_bugs_query = (
+            update(BlockBugsORM)
+            .where(BlockBugsORM.block_id.in_(plan_blocks_id))
+        )
+
+        projects_id = (await session.execute(projects_query)).scalars().all()
+        block_testings_id = (await session.execute(block_testing_query)).scalars().all()
+        block_bugs_id = (await session.execute(block_bugs_query)).scalars().all()
+
         await session.commit()
+        return WorkerOnFireDTO(
+            worker_id=worker_id,
+            email=email,
+            projects_id=projects_id,
+            plan_blocks_id=plan_blocks_id,
+            block_testings_id=block_testings_id,
+            block_bugs_id=block_bugs_id
+        )
 
-        if not result.all():
-            return ResultInfo.failure
 
-        return ResultInfo.success
-
-
-async def fire_due_to_overdue() -> list[WorkerDTO]:
-    session: AsyncSession
+async def add_overdue(worker_id: int) -> WorkerOnFireDTO | None:
+    session = AsyncSession
     async with async_session_factory() as session:
         query = (
             update(WorkersORM)
-            .where(WorkersORM.overdue_count > 7)
-            .values(fire_date=datetime.datetime.now(datetime.UTC))
+            .where(WorkersORM.id == worker_id)
+            .values(WorkersORM.overdue_count+1)
             .returning(WorkersORM)
         )
 
-        result_workers = (await session.execute(query)).scalars().all()
-        await session.commit()
+        worker = (await session.execute(query)).scalars().first()
 
-        return [WorkerDTO.model_validate(worker, from_attributes=True) for worker in result_workers]
+        if worker is None or worker.overdue < 7:
+            await session.commit()
+            return None
+
+        await session.commit()
+        return await fire_worker(worker_id)
+
+
+async def fire_due_to_overdue() -> list[WorkerOnFireDTO]:
+    session: AsyncSession
+    async with async_session_factory() as session:
+        workers: list[WorkerOnFireDTO] = []
+
+        query = (
+            select(WorkersORM.id)
+            .where(WorkersORM.overdue_count >= 7)
+        )
+
+        workers_id = (await session.execute(query)).scalars().all()
+        for worker_id in workers_id:
+            workers.append(await fire_worker(worker_id))
+
+        await session.commit()
+        return workers
 
 
 async def get_projects_from_worker(worker_id: int) -> list[ProjectByWorkerDTO]:
@@ -129,16 +178,12 @@ async def get_projects_from_worker(worker_id: int) -> list[ProjectByWorkerDTO]:
             .join(ProjectsORM, RelProjectsWorkersORM.project_id == ProjectsORM.id)
         )
 
-        result = await session.execute(projects_query)
+        projects_orm = (await session.execute(projects_query)).all()
 
-        projects_orm = result.all()
-
-        print(f"{projects_orm=}")
-        workers_dto = [ProjectByWorkerDTO.model_validate(project_orm, from_attributes=True) for project_orm in
-                       projects_orm]
+        workers_dto = [ProjectByWorkerDTO.model_validate(project_orm, from_attributes=True)
+                       for project_orm in projects_orm]
 
         await session.commit()
-
         return workers_dto
 
 
@@ -148,15 +193,28 @@ async def transfer_worker(worker_id: int, new_project_id: int, old_project_id: i
         get_new_project_query = (
             select(ProjectsORM)
             .options(selectinload(ProjectsORM.workers))
-            .filter_by(id=new_project_id)
+            .where(
+                and_(
+                    ProjectsORM.id == new_project_id,
+                    ProjectsORM.end_date == None
+                )
+            )
         )
         get_worker_query = (
             select(WorkersORM)
-            .filter_by(id=worker_id)
+            .where(
+                and_(
+                    WorkersORM.id == worker_id,
+                    WorkersORM.fire_date == None
+                )
+            )
         )
 
-        new_project = (await session.execute(get_new_project_query)).scalar_one()
-        worker = (await session.execute(get_worker_query)).scalar_one()
+        new_project = (await session.execute(get_new_project_query)).scalar_one_or_none()
+        worker = (await session.execute(get_worker_query)).scalar_one_or_none()
+
+        if new_project is None or worker is None:
+            return False
 
         new_project.workers.append(worker)
 
@@ -164,24 +222,35 @@ async def transfer_worker(worker_id: int, new_project_id: int, old_project_id: i
             count_projects_query = (
                 select(count()).select_from(RelProjectsWorkersORM)
                 .where(
-                    RelProjectsWorkersORM.worker_id == worker_id and
-                    RelProjectsWorkersORM.project_hire_date is not None)
+                    and_(
+                        RelProjectsWorkersORM.worker_id == worker_id,
+                        RelProjectsWorkersORM.project_fire_date == None
+                    )
+                )
             )
 
             count_result = (await session.execute(count_projects_query)).scalar_one()
             print(count_result)
+
             if count_result > 2:
                 return False
 
         else:
             end_project_query = (
                 update(RelProjectsWorkersORM)
-                .where(and_(RelProjectsWorkersORM.project_id == int(old_project_id),
-                            RelProjectsWorkersORM.worker_id == worker_id))
+                .where(and_(
+                    RelProjectsWorkersORM.project_id == int(old_project_id),
+                    RelProjectsWorkersORM.worker_id == worker_id),
+                    RelProjectsWorkersORM.project_fire_date == None
+                )
                 .values(project_fire_date=datetime.datetime.now(datetime.UTC))
+                .returning(ProjectsORM.id)
             )
 
-            await session.execute(end_project_query)
+            old_project_id = (await session.execute(end_project_query)).scalar_one_or_none()
+
+            if old_project_id is None:
+                return False
 
         await session.commit()
         return True

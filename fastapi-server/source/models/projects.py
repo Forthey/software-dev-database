@@ -5,7 +5,7 @@ class ProjectsORM(Base):
     __tablename__ = "projects"
 
     id: Mapped[IntPrimKey]
-    name: Mapped[MetaStr]
+    name: Mapped[MetaStr] = mapped_column(unique=True)
     description: Mapped[DetailedInfoStr]
     start_date: Mapped[CreateDate]
     end_date: Mapped[datetime.datetime | None]

@@ -34,3 +34,11 @@ class WorkerByProjectDTO(WorkerDTO):
     project_hire_date: datetime.datetime
     project_fire_date: datetime.datetime | None
 
+
+class WorkerOnFireDTO(WorkerDTO):
+    worker_id: int
+    email: str
+    projects_id: list[int]
+    plan_blocks_id: list[int]
+    block_testings_id: list[int]
+    block_bugs_id: list[int]

@@ -1,7 +1,10 @@
 from fastapi import APIRouter
+from starlette import status
+from starlette.responses import Response
 
-from schemas.plan_blocks import PlanBlockDTO, BlockBugDTO, BlockTestingDTO, BlockBugAddDTO, PlanBlockAddDTO
-from queries import plan_blocks
+from schemas.plan_blocks import PlanBlockDTO, BlockBugDTO, BlockTestingDTO, BlockBugAddDTO, PlanBlockAddDTO, \
+    BlockWithTestAndBugs
+from queries import plan_blocks, workers
 
 
 router = APIRouter(
@@ -20,19 +23,42 @@ async def get_plan_blocks(project_id: int):
     return await plan_blocks.get_plan_blocks(project_id)
 
 
-@router.get("/{plan_block_id}", response_model=PlanBlockDTO)
-async def get_plan_block(plan_block_id: int):
-    return await plan_blocks.get_plan_block(plan_block_id)
+@router.get("/{plan_block_id}", response_model=PlanBlockDTO | None)
+async def get_plan_block(plan_block_id: int, response: Response):
+    plan_block = await plan_blocks.get_plan_block(plan_block_id)
+    if plan_block is None:
+        response.status_code = status.HTTP_400_BAD_REQUEST
+    return plan_block
 
 
 @router.post("/")
-async def add_plan_block(plan_block: PlanBlockAddDTO):
-    await plan_blocks.add_plan_block(plan_block)
+async def add_plan_block(plan_block: PlanBlockAddDTO, response: Response):
+    plan_block_id = await plan_blocks.add_plan_block(plan_block)
+    if plan_block_id is None:
+        response.status_code = status.HTTP_400_BAD_REQUEST
+    return plan_block_id
 
 
-@router.delete("/{plan_block_id}")
-async def delete_plan_block(plan_block_id: int):
-    await plan_blocks.close_plan_block(plan_block_id)
+@router.delete("/{plan_block_id}", response_model=BlockWithTestAndBugs | None)
+async def delete_plan_block(plan_block_id: int, response: Response):
+    block_with_rel = await plan_blocks.close_plan_block(plan_block_id)
+    if block_with_rel is None:
+        response.status_code = status.HTTP_400_BAD_REQUEST
+        return None
+
+    if block_with_rel.end_date > block_with_rel.deadline:
+        # TODO fire if need
+        await workers.add_overdue(block_with_rel.developer_id)
+    for block_test in block_with_rel.block_testing:
+        if block_test.end_date > block_test.deadline:
+            # TODO fire if need
+            await workers.add_overdue(block_test.tester_id)
+    for block_bug in block_with_rel.block_bugs:
+        if block_bug.fix_date > block_bug.deadline:
+            # TODO fire if need
+            await workers.add_overdue(block_with_rel.developer_id)
+
+    return block_with_rel
 
 #
 # Block testing
@@ -44,14 +70,24 @@ async def get_block_tests(plan_block_id: int):
     return await plan_blocks.get_block_tests(plan_block_id)
 
 
-@router.post("/{plan_block_id}/tests/{tester_id}")
-async def add_block_test(plan_block_id: int, tester_id: int):
-    await plan_blocks.send_block_to_test(plan_block_id, tester_id)
+@router.post("/{plan_block_id}/tests/{tester_id}", response_model=int | None)
+async def add_block_test(project_id: int, plan_block_id: int, tester_id: int, response: Response):
+    block_test_id = await plan_blocks.send_block_to_test(project_id, plan_block_id, tester_id)
+    if block_test_id is None:
+        response.status_code = status.HTTP_400_BAD_REQUEST
+    return block_test_id
 
 
-@router.delete("/{plan_block_id}/tests/{test_id}")
-async def close_block_test(plan_block_id: int, test_id: int):
-    await plan_blocks.close_block_test(test_id)
+@router.delete("/{plan_block_id}/tests/{test_id}", response_model=BlockTestingDTO | None)
+async def close_block_test(plan_block_id: int, test_id: int, response: Response):
+    block_test = await plan_blocks.close_block_test(test_id)
+    if block_test is None:
+        response.status_code = status.HTTP_400_BAD_REQUEST
+        return None
+    if block_test.end_date > block_test.deadline:
+        # TODO fire if need
+        await workers.add_overdue(block_test.tester_id)
+    return block_test
 
 
 #
@@ -64,11 +100,21 @@ async def get_block_bugs(plan_block_id: int):
     return await plan_blocks.get_block_bugs(plan_block_id)
 
 
-@router.post("/{plan_block_id}/bugs")
-async def add_block_bug(plan_block_id: int, block_bugs: list[BlockBugAddDTO]):
-    await plan_blocks.add_block_bugs(block_bugs)
+@router.post("/{plan_block_id}/bugs", response_model=int | None)
+async def add_block_bug(project_id: int, plan_block_id: int, block_bug: BlockBugAddDTO, response: Response):
+    block_bug_id = await plan_blocks.add_block_bug(project_id, plan_block_id, block_bug)
+    if block_bug_id is None:
+        response.status_code = status.HTTP_400_BAD_REQUEST
+    return block_bug_id
 
 
-@router.delete("/{plan_block_id}/bugs/{block_bug_id}")
-async def close_block_bug(plan_block_id: int, block_bug_id: int):
-    await plan_blocks.close_block_bug(block_bug_id)
+@router.delete("/{plan_block_id}/bugs/{block_bug_id}", response_model=BlockBugDTO)
+async def close_block_bug(plan_block_id: int, block_bug_id: int, response: Response):
+    block_bug = await plan_blocks.close_block_bug(block_bug_id)
+    if block_bug is None:
+        response.status_code = status.HTTP_400_BAD_REQUEST
+        return None
+    if block_bug.fix_date > block_bug.deadline:
+        # TODO fire if need
+        await workers.add_overdue(block_bug.developer_id)
+    return block_bug
