@@ -11,4 +11,6 @@ uvicorn[standart]==0.28.0
 pydantic-settings==2.2.1
 pydantic==2.6.3
 
+aiohttp==3.9.4
+
 black==24.3.0

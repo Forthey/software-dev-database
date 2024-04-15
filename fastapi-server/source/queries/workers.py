@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import select, update, func, Sequence, insert, and_, or_
+from sqlalchemy import select, update, insert, and_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 # (так как, если "правых" строк больше, при join левые будут дублироваться (а это первичный ключ, такое))
 # selectin подходит для one-to-many и many-to-many, так как делает два запроса:
 # сначала выбирает "левые" строки, а затем подгружает соответсвующие им "правые" строки
-from sqlalchemy.orm import joinedload, selectinload, Session
+from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.functions import count
 
 from engine import async_session_factory
@@ -18,7 +18,6 @@ from models.plan_blocks import PlanBlocksORM, BlockTestingORM, BlockBugsORM, Pla
 
 from schemas.all import WorkerAddDTO, WorkerDTO, ProjectByWorkerDTO
 
-from new_types import BugCategory, Level, SpecializationCode
 from schemas.workers import WorkerOnFireDTO
 
 
@@ -72,20 +71,23 @@ async def add_worker(worker: WorkerAddDTO) -> int | None:
             return None
 
 
-async def fire_worker(worker_id: int) -> WorkerOnFireDTO | None:
+async def fire_worker(worker_id: int, fire_reason: str) -> WorkerOnFireDTO | None:
     session: AsyncSession
     async with async_session_factory() as session:
         query = (
             update(WorkersORM)
             .where(WorkersORM.id == worker_id)
-            .values(fire_date=datetime.datetime.now(datetime.UTC))
-            .returning(WorkersORM.id, WorkersORM.email)
+            .values(
+                fire_date=datetime.datetime.now(datetime.UTC),
+                fire_reason=fire_reason
+            )
+            .returning(WorkersORM)
         )
 
-        [worker_id, email] = (await session.execute(query)).scalars().all()
-
-        if worker_id is None:
+        worker_orm = (await session.execute(query)).scalar_one_or_none()
+        if worker_orm is None:
             return None
+        worker = WorkerDTO.model_validate(worker_orm, from_attributes=True)
 
         plan_blocks_query = (
             update(PlanBlocksORM)
@@ -119,8 +121,7 @@ async def fire_worker(worker_id: int) -> WorkerOnFireDTO | None:
 
         await session.commit()
         return WorkerOnFireDTO(
-            worker_id=worker_id,
-            email=email,
+            **worker.model_dump(),
             projects_id=projects_id,
             plan_blocks_id=plan_blocks_id,
             block_testings_id=block_testings_id,
@@ -129,7 +130,7 @@ async def fire_worker(worker_id: int) -> WorkerOnFireDTO | None:
 
 
 async def add_overdue(worker_id: int) -> WorkerOnFireDTO | None:
-    session = AsyncSession
+    session: AsyncSession
     async with async_session_factory() as session:
         query = (
             update(WorkersORM)
@@ -140,12 +141,12 @@ async def add_overdue(worker_id: int) -> WorkerOnFireDTO | None:
 
         worker = (await session.execute(query)).scalars().first()
 
-        if worker is None or worker.overdue < 7:
+        if worker is None or worker.overdue_count < 7:
             await session.commit()
             return None
 
         await session.commit()
-        return await fire_worker(worker_id)
+        return await fire_worker(worker_id, "Число просрочек превысило допустимый лимит")
 
 
 async def fire_due_to_overdue() -> list[WorkerOnFireDTO]:
@@ -160,7 +161,7 @@ async def fire_due_to_overdue() -> list[WorkerOnFireDTO]:
 
         workers_id = (await session.execute(query)).scalars().all()
         for worker_id in workers_id:
-            workers.append(await fire_worker(worker_id))
+            workers.append(await fire_worker(worker_id, "Число просрочек превысило допустимый лимит"))
 
         await session.commit()
         return workers
@@ -174,7 +175,12 @@ async def get_projects_from_worker(worker_id: int) -> list[ProjectByWorkerDTO]:
                    RelProjectsWorkersORM.project_hire_date,
                    RelProjectsWorkersORM.project_fire_date)
             .select_from(RelProjectsWorkersORM)
-            .where(RelProjectsWorkersORM.worker_id == worker_id and RelProjectsWorkersORM.project_fire_date == None)
+            .where(
+                and_(
+                    RelProjectsWorkersORM.worker_id == worker_id,
+                    RelProjectsWorkersORM.project_fire_date is None
+                )
+            )
             .join(ProjectsORM, RelProjectsWorkersORM.project_id == ProjectsORM.id)
         )
 
@@ -196,7 +202,7 @@ async def transfer_worker(worker_id: int, new_project_id: int, old_project_id: i
             .where(
                 and_(
                     ProjectsORM.id == new_project_id,
-                    ProjectsORM.end_date == None
+                    ProjectsORM.end_date is None
                 )
             )
         )
@@ -205,7 +211,7 @@ async def transfer_worker(worker_id: int, new_project_id: int, old_project_id: i
             .where(
                 and_(
                     WorkersORM.id == worker_id,
-                    WorkersORM.fire_date == None
+                    WorkersORM.fire_date is None
                 )
             )
         )
@@ -224,7 +230,7 @@ async def transfer_worker(worker_id: int, new_project_id: int, old_project_id: i
                 .where(
                     and_(
                         RelProjectsWorkersORM.worker_id == worker_id,
-                        RelProjectsWorkersORM.project_fire_date == None
+                        RelProjectsWorkersORM.project_fire_date is None
                     )
                 )
             )
@@ -241,7 +247,7 @@ async def transfer_worker(worker_id: int, new_project_id: int, old_project_id: i
                 .where(and_(
                     RelProjectsWorkersORM.project_id == int(old_project_id),
                     RelProjectsWorkersORM.worker_id == worker_id),
-                    RelProjectsWorkersORM.project_fire_date == None
+                    RelProjectsWorkersORM.project_fire_date is None
                 )
                 .values(project_fire_date=datetime.datetime.now(datetime.UTC))
                 .returning(ProjectsORM.id)

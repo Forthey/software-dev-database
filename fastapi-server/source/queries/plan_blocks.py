@@ -142,9 +142,22 @@ async def send_block_to_test(project_id: int, plan_block_id: int, tester_id: int
                 not (await session.execute(worker_check_query)).scalar_one_or_none():
             return None
 
+        #  Get plan block dates
+        plan_block = await session.get(PlanBlocksORM, plan_block_id)
+        if plan_block is None:
+            return None
+        plan_block_deadline: datetime.datetime = plan_block.deadline
+        plan_block_start: datetime.datetime = plan_block.start_date
+        plan_block_duration = plan_block_deadline - plan_block_start
+        test_block_deadline = datetime.datetime.now(datetime.UTC) + plan_block_duration
+
         query = (
             insert(BlockTestingORM)
-            .values(tester_id=tester_id, plan_block_id=plan_block_id)
+            .values(
+                tester_id=tester_id,
+                plan_block_id=plan_block_id,
+                deadline=test_block_deadline
+            )
             .returning(BlockTestingORM.id)
         )
 
@@ -206,9 +219,14 @@ async def add_block_bug(project_id: int, plan_block_id: int, block_bug: BlockBug
                 not (await session.execute(worker_check_query)).scalar_one_or_none():
             return None
 
+        block_bug_deadline = datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=1)
         query = (
             insert(BlockBugsORM)
-            .values(**block_bug.model_dump(), block_id=plan_block_id)
+            .values(
+                **block_bug.model_dump(),
+                block_id=plan_block_id,
+                deadline=block_bug_deadline
+            )
             .returning(BlockBugsORM.id)
         )
 

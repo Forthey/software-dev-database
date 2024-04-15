@@ -4,3 +4,5 @@
 venv
 # Python cache
 __pycache__
+# Secret
+source/secret.py
