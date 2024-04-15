@@ -19,6 +19,7 @@ interface Props {
 }
 
 function WorkerSearchForm({project_id}: Props) {
+    const navigate = useNavigate()
     const [username, setUsername] = useState("")
     const [workers, setWorkers] = useState<Worker[]>([])
 
@@ -39,9 +40,9 @@ function WorkerSearchForm({project_id}: Props) {
         const worker = workers.find(worker => worker.username == username)
 
         if (worker != undefined) {
-            axios.post(`http://localhost:8000/workers/transfer/${worker.id}/${project_id}`).then(
-
-            ).catch(() => alert("Превышено максимальное количество проектов для работника"))
+            axios.post(`http://localhost:8000/workers/transfer/${worker.id}/${project_id}`)
+                .then(() => navigate(0))
+                .catch(() => alert("Превышено максимальное количество проектов для работника"))
         }
     }
 

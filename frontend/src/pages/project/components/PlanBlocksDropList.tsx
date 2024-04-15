@@ -34,6 +34,7 @@ function PlanBlockForm({projectId}: Props) {
     })
     const [workerUsername, setWorkerUsername] = useState<string>("")
     const [workers, setWorkers] = useState<Worker[]>([])
+    const navigate = useNavigate()
 
 
     function setPlanBlockTitle(newTitle: string) {
@@ -71,7 +72,7 @@ function PlanBlockForm({projectId}: Props) {
         newPlanBlock.developer_id = Number(workerUsername)
 
         axios.post<PlanBlockAdd>(`http://localhost:8000/projects/${projectId}/plan_blocks`, newPlanBlock)
-            .then()
+            .then(() => navigate(0))
             .catch(() => alert("Нельзя добавить блок плана. Скорее всего, разработчик не находится в проекте"))
     }
 

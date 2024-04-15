@@ -8,6 +8,7 @@ import axios from "axios";
 // Interfaces
 import {Project, ProjectByWorker} from "../../../interfaces/project.ts";
 import TransferButton from "../../../components/TransferButton.tsx";
+import {useNavigate} from "react-router";
 
 
 interface Props {
@@ -24,6 +25,7 @@ interface ProjectRowProps {
 function ProjectRow({worker_id, project}: ProjectRowProps) {
     const [projectName, setProjectName] = useState<string>("")
     const [projects, setProjects] = useState<Project[]>([])
+    const navigate = useNavigate()
 
 
     function setProjectsDataList(nameMask: string) {
@@ -34,9 +36,7 @@ function ProjectRow({worker_id, project}: ProjectRowProps) {
         setProjectName(nameMask)
 
         axios.get<Project[]>(`http://localhost:8000/projects/search/${nameMask}`)
-            .then(response =>
-                setProjects(response.data)
-            )
+            .then(response => setProjects(response.data))
     }
 
     function Transfer() {
@@ -44,7 +44,7 @@ function ProjectRow({worker_id, project}: ProjectRowProps) {
 
         if (newProject != undefined) {
             axios.post(`http://localhost:8000/workers/transfer/${worker_id}/${newProject.id}/${project.id}`)
-                .then(() => alert("Трансфер удачный"))
+                .then(() => navigate(0))
                 .catch(() => alert("Такой трансфер провести нельзя"))
         }
     }
@@ -77,9 +77,7 @@ function ProjectsDropList({worker_id}: Props) {
 
     useEffect(() => {
         axios.get<ProjectByWorker[]>(`http://localhost:8000/workers/${worker_id}/projects`)
-            .then(response => {
-                setProjects(response.data)
-            })
+            .then(response => setProjects(response.data))
             .catch(() => alert(`Работника ${worker_id} не существует`))
     }, []);
 
