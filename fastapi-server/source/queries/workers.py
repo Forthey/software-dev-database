@@ -1,6 +1,7 @@
 import datetime
 
-from sqlalchemy import select, update, insert, and_
+from sqlalchemy import select, update, and_
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,6 +18,7 @@ from models.projects import ProjectsORM, RelProjectsWorkersORM
 from models.plan_blocks import PlanBlocksORM, BlockTestingORM, BlockBugsORM, PlanBlocksTransferORM
 
 from schemas.all import WorkerAddDTO, WorkerDTO, ProjectByWorkerDTO
+from schemas.plan_blocks import PlanBlockDTO
 
 from schemas.workers import WorkerOnFireDTO
 
@@ -178,7 +180,7 @@ async def get_projects_from_worker(worker_id: int) -> list[ProjectByWorkerDTO]:
             .where(
                 and_(
                     RelProjectsWorkersORM.worker_id == worker_id,
-                    RelProjectsWorkersORM.project_fire_date is None
+                    RelProjectsWorkersORM.project_fire_date == None
                 )
             )
             .join(ProjectsORM, RelProjectsWorkersORM.project_id == ProjectsORM.id)
@@ -186,11 +188,7 @@ async def get_projects_from_worker(worker_id: int) -> list[ProjectByWorkerDTO]:
 
         projects_orm = (await session.execute(projects_query)).all()
 
-        workers_dto = [ProjectByWorkerDTO.model_validate(project_orm, from_attributes=True)
-                       for project_orm in projects_orm]
-
-        await session.commit()
-        return workers_dto
+        return [ProjectByWorkerDTO.model_validate(project_orm, from_attributes=True) for project_orm in projects_orm]
 
 
 async def transfer_worker(worker_id: int, new_project_id: int, old_project_id: int | None) -> bool:
@@ -202,7 +200,7 @@ async def transfer_worker(worker_id: int, new_project_id: int, old_project_id: i
             .where(
                 and_(
                     ProjectsORM.id == new_project_id,
-                    ProjectsORM.end_date is None
+                    ProjectsORM.end_date == None
                 )
             )
         )
@@ -211,7 +209,7 @@ async def transfer_worker(worker_id: int, new_project_id: int, old_project_id: i
             .where(
                 and_(
                     WorkersORM.id == worker_id,
-                    WorkersORM.fire_date is None
+                    WorkersORM.fire_date == None
                 )
             )
         )
@@ -222,7 +220,26 @@ async def transfer_worker(worker_id: int, new_project_id: int, old_project_id: i
         if new_project is None or worker is None:
             return False
 
-        new_project.workers.append(worker)
+        try:
+            insert_query = (
+                insert(RelProjectsWorkersORM)
+                .values(
+                    worker_id=worker_id,
+                    project_id=new_project_id,
+                    project_fire_date=None
+                )
+            ).on_conflict_do_update(
+                index_elements=[RelProjectsWorkersORM.worker_id, RelProjectsWorkersORM.project_id],
+                set_=dict(
+                    worker_id=worker_id,
+                    project_id=new_project_id,
+                    project_fire_date=None
+                )
+            )
+
+            await session.execute(insert_query)
+        except IntegrityError as e:
+            print("Cringe")
 
         if old_project_id is None:
             count_projects_query = (
@@ -230,7 +247,7 @@ async def transfer_worker(worker_id: int, new_project_id: int, old_project_id: i
                 .where(
                     and_(
                         RelProjectsWorkersORM.worker_id == worker_id,
-                        RelProjectsWorkersORM.project_fire_date is None
+                        RelProjectsWorkersORM.project_fire_date == None
                     )
                 )
             )
@@ -247,7 +264,7 @@ async def transfer_worker(worker_id: int, new_project_id: int, old_project_id: i
                 .where(and_(
                     RelProjectsWorkersORM.project_id == int(old_project_id),
                     RelProjectsWorkersORM.worker_id == worker_id),
-                    RelProjectsWorkersORM.project_fire_date is None
+                    RelProjectsWorkersORM.project_fire_date == None
                 )
                 .values(project_fire_date=datetime.datetime.now(datetime.UTC))
                 .returning(ProjectsORM.id)
@@ -260,3 +277,16 @@ async def transfer_worker(worker_id: int, new_project_id: int, old_project_id: i
 
         await session.commit()
         return True
+
+
+async def get_plan_blocks(worker_id: int) -> list[PlanBlockDTO]:
+    session: AsyncSession
+    async with async_session_factory() as session:
+        query = (
+            select(PlanBlocksORM)
+            .where(PlanBlocksORM.developer_id == worker_id)
+            .order_by(PlanBlocksORM.start_date)
+        )
+
+        plan_blocks_orm = (await session.execute(query)).scalars().all()
+        return [PlanBlockDTO.model_validate(plan_block, from_attributes=True) for plan_block in plan_blocks_orm]

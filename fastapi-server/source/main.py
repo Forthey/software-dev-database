@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from queries import reports
 from routers import projects, workers, plan_blocks
+from schemas.projects import ProjectQualityDTO
 
 # # Без изменения loop policy на винде asyncio не работает с psycopg
 # if platform == "win32":
@@ -29,6 +31,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/quality", response_model=list[ProjectQualityDTO])
+async def get_projects_report():
+    return await reports.get_development_quality()
+
 
 app.include_router(projects.router)
 app.include_router(workers.router)

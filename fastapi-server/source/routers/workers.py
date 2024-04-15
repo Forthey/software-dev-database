@@ -4,6 +4,7 @@ from starlette.responses import Response
 
 from schemas.all import WorkerDTO, WorkerAddDTO, ProjectByWorkerDTO
 from queries import workers
+from schemas.plan_blocks import PlanBlockDTO
 from schemas.workers import WorkerOnFireDTO
 from send_email import send_email
 
@@ -65,3 +66,8 @@ async def transfer_worker(response: Response, worker_id: int, new_project_id: in
 async def transfer_worker(response: Response, worker_id: int, new_project_id: int, old_project_id):
     if not await workers.transfer_worker(worker_id, new_project_id, old_project_id):
         response.status_code = status.HTTP_400_BAD_REQUEST
+
+
+@router.get("/{worker_id}/plan_blocks", response_model=list[PlanBlockDTO])
+async def get_plan_blocks(worker_id: int):
+    return await workers.get_plan_blocks(worker_id)

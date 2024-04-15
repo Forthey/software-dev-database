@@ -3,8 +3,8 @@ from starlette import status
 from starlette.responses import Response
 
 from schemas.all import ProjectAddDTO, ProjectDTO, WorkerByProjectDTO
-from queries import projects
-from schemas.projects import ProjectOnCloseDTO
+from queries import projects, reports
+from schemas.projects import ProjectOnCloseDTO, ProjectQualityDTO
 
 router = APIRouter(
     prefix="/projects",

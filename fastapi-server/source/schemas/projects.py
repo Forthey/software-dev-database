@@ -34,3 +34,9 @@ class ProjectOnCloseDTO(BaseModel):
     project_id: int
     workers_id: list[int]
     plan_blocks_id: list[int]
+
+
+class ProjectQualityDTO(BaseModel):
+    project_name: str
+    quality: float
+

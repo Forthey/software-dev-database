@@ -57,7 +57,7 @@ async def add_plan_block(plan_block: PlanBlockAddDTO) -> int | None:
                 and_(
                     RelProjectsWorkersORM.project_id == plan_block.project_id,
                     RelProjectsWorkersORM.worker_id == plan_block.developer_id,
-                    RelProjectsWorkersORM.project_fire_date != None
+                    RelProjectsWorkersORM.project_fire_date == None
                 )
             )
         )
@@ -133,7 +133,7 @@ async def send_block_to_test(project_id: int, plan_block_id: int, tester_id: int
                 and_(
                     RelProjectsWorkersORM.project_id == project_id,
                     RelProjectsWorkersORM.worker_id == tester_id,
-                    RelProjectsWorkersORM.project_fire_date != None
+                    RelProjectsWorkersORM.project_fire_date == None
                 )
             )
         )
@@ -210,7 +210,7 @@ async def add_block_bug(project_id: int, plan_block_id: int, block_bug: BlockBug
                 and_(
                     RelProjectsWorkersORM.project_id == project_id,
                     RelProjectsWorkersORM.worker_id == block_bug.tester_id,
-                    RelProjectsWorkersORM.project_fire_date != None
+                    RelProjectsWorkersORM.project_fire_date == None
                 )
             )
         )
