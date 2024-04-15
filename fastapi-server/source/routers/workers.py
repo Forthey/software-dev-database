@@ -1,5 +1,3 @@
-from http import HTTPStatus
-
 from fastapi import APIRouter
 from starlette import status
 from starlette.responses import Response
@@ -7,6 +5,7 @@ from starlette.responses import Response
 from schemas.all import WorkerDTO, WorkerAddDTO, ProjectByWorkerDTO
 from queries import workers
 from schemas.workers import WorkerOnFireDTO
+from send_email import send_email
 
 router = APIRouter(
     prefix="/workers",
@@ -46,6 +45,8 @@ async def delete_worker(worker_id: int, response: Response):
     worker = await workers.fire_worker(worker_id, "Решение начальства")
     if worker is None:
         response.status_code = status.HTTP_400_BAD_REQUEST
+    else:
+        await send_email(worker)
     return worker
 
 

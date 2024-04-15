@@ -1,5 +1,3 @@
-import asyncio
-
 import aiohttp
 
 from schemas.workers import WorkerOnFireDTO
