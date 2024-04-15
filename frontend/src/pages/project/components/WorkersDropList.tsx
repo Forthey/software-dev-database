@@ -3,7 +3,7 @@ import "../assets/WorkersDropList.css"
 
 // Modules
 import {useEffect, useState} from "react";
-import axios, {AxiosError, HttpStatusCode} from "axios";
+import axios from "axios";
 import {useNavigate} from "react-router";
 
 // My components
@@ -41,15 +41,7 @@ function WorkerSearchForm({project_id}: Props) {
         if (worker != undefined) {
             axios.post(`http://localhost:8000/workers/transfer/${worker.id}/${project_id}`).then(
 
-            ).catch((error: AxiosError) => {
-                if (error.response == undefined) {
-                    return
-                }
-
-                if (error.status == HttpStatusCode.BadRequest) {
-                    alert("Превышено максимальное количество проектов для работника")
-                }
-            })
+            ).catch(() => alert("Превышено максимальное количество проектов для работника"))
         }
     }
 
@@ -99,9 +91,8 @@ function WorkersDropList({project_id}: Props) {
     const [searchActive, setSearchActive] = useState(false)
 
     useEffect(() => {
-        axios.get<WorkerByProject[]>(`http://localhost:8000/projects/${project_id}/workers`).then(response => {
-            setWorkers(response.data)
-        })
+        axios.get<WorkerByProject[]>(`http://localhost:8000/projects/${project_id}/workers`)
+            .then(response => setWorkers(response.data))
     }, []);
 
     function addSearchWorker() {

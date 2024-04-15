@@ -9,6 +9,8 @@ import Main from "./pages/main/Main.tsx";
 import ProjectPage from "./pages/project/ProjectPage.tsx";
 import Menu from "./components/Menu.tsx";
 import WorkerPage from "./pages/worker/WorkerPage.tsx";
+import Reports from "./pages/reports/Reports.tsx";
+import PlanBlockPage from "./pages/plan_block/PlanBlockPage.tsx";
 
 
 function App() {
@@ -24,6 +26,8 @@ function App() {
           <Route path="/workers/add" Component={AddWorkerForm}></Route>
           <Route path="/projects/:id" Component={ProjectPage}></Route>
           <Route path="/workers/:id" Component={WorkerPage}></Route>
+          <Route path="/projects/:project_id/plan_blocks/:id" Component={PlanBlockPage}></Route>
+          <Route path="/reports" Component={Reports}></Route>
       </Routes>
       </>
   )

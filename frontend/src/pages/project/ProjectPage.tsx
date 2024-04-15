@@ -21,6 +21,7 @@ function ProjectPage() {
             .then(({data}) => {
                 setProject(data)
             })
+            .catch(() => alert("Проекта не существует"))
     },[])
 
     if (project != undefined) {

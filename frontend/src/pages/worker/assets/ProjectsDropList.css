@@ -3,13 +3,21 @@
     display: grid;
     place-items: center;
 
+    & .DropListHeader {
+        width: 100%;
+        font-size: 2.5vw;
+        border-bottom: 2px solid white;
+    }
+
     & .ProjectsTable {
         width: 100%;
         & .ProjectsTableHead {
             display: flex;
             justify-content: space-between;
+            border-bottom: 2px solid white;
 
             & p {
+                padding-top: 1vh;
                 width: 25%;
                 height: 4vh;
                 font-weight: bold;
@@ -26,12 +34,17 @@
                 text-overflow: ellipsis;
                 white-space: nowrap;
                 overflow: hidden;
+                padding: 0.5vh 0 0.5vh 0;
 
                 transition: all 0.5s;
 
                 &:hover {
                     background: #1e1f22;
                 }
+            }
+
+            & p+p {
+                border-left: 2px solid white;
             }
 
             & div {

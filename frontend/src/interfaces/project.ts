@@ -15,3 +15,9 @@ export interface ProjectByWorker extends Project {
     project_hire_date: Date
     project_fire_date: Date | null
 }
+
+
+export interface ProjectQuality {
+    project_name: string
+    quality: number
+}

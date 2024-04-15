@@ -7,7 +7,6 @@ import axios from "axios";
 
 // Interfaces
 import {Project, ProjectByWorker} from "../../../interfaces/project.ts";
-import DropListHeader from "../../project/components/DropListHeader.tsx";
 import TransferButton from "../../../components/TransferButton.tsx";
 
 
@@ -44,10 +43,9 @@ function ProjectRow({worker_id, project}: ProjectRowProps) {
         const newProject = projects.find(project => project.name == projectName)
 
         if (newProject != undefined) {
-            axios.post(`http://localhost:8000/workers/transfer/${worker_id}/${newProject.id}/${project.id}`).then(
-                response =>
-                    alert("Transfer successful")
-            )
+            axios.post(`http://localhost:8000/workers/transfer/${worker_id}/${newProject.id}/${project.id}`)
+                .then(() => alert("Трансфер удачный"))
+                .catch(() => alert("Такой трансфер провести нельзя"))
         }
     }
 
@@ -82,6 +80,7 @@ function ProjectsDropList({worker_id}: Props) {
             .then(response => {
                 setProjects(response.data)
             })
+            .catch(() => alert(`Работника ${worker_id} не существует`))
     }, []);
 
 
@@ -100,7 +99,7 @@ function ProjectsDropList({worker_id}: Props) {
                 <div className="ProjectsTableBody">
                     {
                         projects.filter(project => project.project_fire_date == null).map(project =>
-                            <ProjectRow project={project} worker_id={worker_id} key={project.id} />
+                            <ProjectRow project={project} worker_id={worker_id} key={project.id}/>
                         )
                     }
                 </div>

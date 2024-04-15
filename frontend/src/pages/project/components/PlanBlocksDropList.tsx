@@ -70,9 +70,9 @@ function PlanBlockForm({projectId}: Props) {
 
         newPlanBlock.developer_id = Number(workerUsername)
 
-        axios.post<PlanBlockAdd>(`http://localhost:8000/projects/${projectId}/plan_blocks`, newPlanBlock).then(
-            // IDK maybe ill do something
-        )
+        axios.post<PlanBlockAdd>(`http://localhost:8000/projects/${projectId}/plan_blocks`, newPlanBlock)
+            .then()
+            .catch(() => alert("Нельзя добавить блок плана. Скорее всего, разработчик не находится в проекте"))
     }
 
     return (
@@ -103,9 +103,9 @@ function PlanBlockRow({projectId, planBlock}: PlanBlockProps) {
     const navigate = useNavigate()
 
     useEffect(() => {
-        axios.get<Worker>(`http://localhost:8000/workers/${planBlock.developer_id}`).then(response =>
-            setDeveloper(response.data)
-        )
+        axios.get<Worker>(`http://localhost:8000/workers/${planBlock.developer_id}`)
+            .then(response => setDeveloper(response.data))
+            .catch(() => alert("Работника не существует"))
     }, []);
 
     function developerNavigate() {
@@ -137,10 +137,8 @@ function PlanBlocksDropList({projectId}: Props) {
 
 
     useEffect(() => {
-        axios.get<PlanBlock[]>(`http://localhost:8000/projects/${projectId}/plan_blocks`).then(response => {
-            setPlanBlocks(response.data)
-            console.log(planBlocks)
-        })
+        axios.get<PlanBlock[]>(`http://localhost:8000/projects/${projectId}/plan_blocks`)
+            .then(response => setPlanBlocks(response.data))
     }, [])
     function addPlanBlockForm() {
         setSearchActive(!searchActive)
