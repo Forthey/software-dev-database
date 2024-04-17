@@ -12,7 +12,8 @@ class ProjectsORM(Base):
 
     workers: Mapped[list["WorkersORM"]] = relationship(
         back_populates="projects",
-        secondary="rel_projects_workers"
+        secondary="rel_projects_workers",
+        order_by="WorkersORM.username"
     )
     plan_blocks: Mapped[list["PlanBlocksORM"]] = relationship(
         back_populates="project"

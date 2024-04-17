@@ -25,7 +25,7 @@ async def get_project(project_id: int, response: Response):
     return project
 
 
-@router.get("/search/{name_mask}", response_model=list[ProjectDTO])
+@router.get("/search/", response_model=list[ProjectDTO])
 async def search_projects(name_mask: str):
     return await projects.search_projects(name_mask)
 

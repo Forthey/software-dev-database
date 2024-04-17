@@ -4,9 +4,11 @@ from fastapi import APIRouter
 from starlette import status
 from starlette.responses import Response
 
+from new_types import BlockStatus
 from schemas.plan_blocks import PlanBlockDTO, BlockBugDTO, BlockTestingDTO, BlockBugAddDTO, PlanBlockAddDTO, \
     BlockWithTestAndBugs
 from queries import plan_blocks, workers
+from schemas.workers import WorkerDTO
 from send_email import send_email
 
 router = APIRouter(
@@ -31,6 +33,14 @@ async def get_plan_block(plan_block_id: int, response: Response):
     if plan_block is None:
         response.status_code = status.HTTP_400_BAD_REQUEST
     return plan_block
+
+
+@router.get("/{plan_block_id}/tester", response_model=WorkerDTO | None)
+async def get_plan_block_status(plan_block_id: int, response: Response):
+    tester = await plan_blocks.get_plan_block_tester(plan_block_id)
+    if tester is None:
+        response.status_code = status.HTTP_400_BAD_REQUEST
+    return tester
 
 
 @router.post("/")
@@ -107,12 +117,12 @@ async def get_block_bugs(plan_block_id: int):
     return await plan_blocks.get_block_bugs(plan_block_id)
 
 
-@router.post("/{plan_block_id}/bugs", response_model=int | None)
-async def add_block_bug(project_id: int, plan_block_id: int, block_bug: BlockBugAddDTO, response: Response):
-    block_bug_id = await plan_blocks.add_block_bug(project_id, plan_block_id, block_bug)
-    if block_bug_id is None:
+@router.post("/{plan_block_id}/bugs", response_model=list[int] | None)
+async def add_block_bug(project_id: int, plan_block_id: int, tester_id: int, block_bugs: list[BlockBugAddDTO], response: Response):
+    block_bugs_id = await plan_blocks.add_block_bugs(project_id, plan_block_id, tester_id, block_bugs)
+    if block_bugs_id is None:
         response.status_code = status.HTTP_400_BAD_REQUEST
-    return block_bug_id
+    return block_bugs_id
 
 
 @router.delete("/{plan_block_id}/bugs/{block_bug_id}", response_model=BlockBugDTO)

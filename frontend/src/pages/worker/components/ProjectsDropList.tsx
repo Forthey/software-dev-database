@@ -50,7 +50,7 @@ function ProjectRow({worker_id, project}: ProjectRowProps) {
     }
 
     return (
-        <div className="ProjectsTableRow">
+        <div className={`ProjectsTableRow${project.project_fire_date != null ? " Closed" : ""}`}>
             <p>{project.name}</p>
             <p>{project.description}</p>
             <p>{(new Date(project.project_hire_date)).toDateString()}</p>
@@ -81,7 +81,6 @@ function ProjectsDropList({worker_id}: Props) {
             .catch(() => alert(`Работника ${worker_id} не существует`))
     }, []);
 
-
     return (
         <div className="ProjectsDropList">
             <div className="DropListHeader">
@@ -96,7 +95,7 @@ function ProjectsDropList({worker_id}: Props) {
                 </div>
                 <div className="ProjectsTableBody">
                     {
-                        projects.filter(project => project.project_fire_date == null).map(project =>
+                        projects.map(project =>
                             <ProjectRow project={project} worker_id={worker_id} key={project.id}/>
                         )
                     }

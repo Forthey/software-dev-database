@@ -1,0 +1,38 @@
+.PlanBlockTest {
+    width: 100%;
+    display: grid;
+    place-items: center;
+
+    padding: 2vh 0 0 0;
+
+    & .BlockBugAdd {
+        width: 30%;
+        display: grid;
+        place-items: center;
+        padding: 2vh 0 2vh 0;
+        & .BugField {
+            width: 100%;
+            height: 3.2vh;
+            padding: 1.5vh 0 1.5vh 0;
+            display: flex;
+            justify-content: space-between;
+
+            & input, select {
+                width: 40%;
+                height: 100%;
+                border: 1px solid white;
+                border-radius: 1vw;
+                color: white;
+                background: black;
+            }
+        }
+
+        & .BugField+.BugField {
+            border-top: 2px dashed #1e1f22;
+        }
+    }
+
+    & .AddButton {
+        margin: 1vh 0 3vh 0;
+    }
+}

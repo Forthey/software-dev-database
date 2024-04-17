@@ -60,5 +60,9 @@
                 }
             }
         }
+
+        & .Closed {
+            background-color: #220009;
+        }
     }
 }

@@ -37,6 +37,7 @@ class WorkerByProjectDTO(WorkerDTO):
 
 class WorkerOnFireDTO(WorkerDTO):
     projects_id: list[int]
-    plan_blocks_id: list[int]
-    block_testings_id: list[int]
-    block_bugs_id: list[int]
+
+
+class WorkerReportDTO(WorkerDTO):
+    projects: list["ProjectDTO"]

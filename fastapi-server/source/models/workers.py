@@ -13,10 +13,11 @@ class WorkersORM(Base):
     hire_date: Mapped[CreateDate]
     fire_date: Mapped[datetime.datetime | None]
     fire_reason: Mapped[DetailedInfoStr | None]
-    overdue_count: Mapped[int] = 0
+    overdue_count: Mapped[int] = mapped_column(default=0)
     level: Mapped[Level]
 
     projects: Mapped[list["ProjectsORM"]] = relationship(
         back_populates="workers",
-        secondary="rel_projects_workers"
+        secondary="rel_projects_workers",
+        order_by="ProjectsORM.start_date"
     )

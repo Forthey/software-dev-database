@@ -49,7 +49,7 @@
             & .WorkersTableRow {
                 display: flex;
 
-                & p {
+                & p, div {
                     padding: 0.5vh 0 0.5vh 0;
                     width: 100%;
 
@@ -59,6 +59,20 @@
                         background-color: #1e1f22;
                     }
                 }
+
+                & > div {
+                    display: flex;
+                    justify-content: space-between;
+                    border-left: 2px solid white;
+                }
+
+                & .DeleteButton {
+                    width: 10%;
+                }
+            }
+
+            & .Closed {
+                background: #220009;
             }
         }
 

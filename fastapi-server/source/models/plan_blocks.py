@@ -1,4 +1,5 @@
 from models.dependencies import *
+from new_types import BlockStatus
 
 
 class PlanBlocksORM(Base):
@@ -32,8 +33,8 @@ class PlanBlocksTransferORM(Base):
 
     id: Mapped[IntPrimKey]
     block_id: Mapped[int] = mapped_column(ForeignKey("plan_blocks.id"))
-    tester_id: Mapped[int] = mapped_column(ForeignKey("workers.id"))
-    developer_id: Mapped[int] = mapped_column(ForeignKey("workers.id"))
+    tester_id: Mapped[int | None] = mapped_column(ForeignKey("workers.id"))
+    new_status: Mapped[BlockStatus] = mapped_column(default=BlockStatus.in_progress)
     date: Mapped[CreateDate]
 
     block: Mapped["PlanBlocksORM"] = relationship(
@@ -63,7 +64,6 @@ class BlockBugsORM(Base):
     title: Mapped[MetaStr]
     block_id: Mapped[int] = mapped_column(ForeignKey("plan_blocks.id"))
     tester_id: Mapped[int] = mapped_column(ForeignKey("workers.id"))
-    developer_id: Mapped[int] = mapped_column(ForeignKey("workers.id"))
     detection_date: Mapped[CreateDate]
     deadline: Mapped[datetime.datetime]
     fix_date: Mapped[datetime.datetime | None]

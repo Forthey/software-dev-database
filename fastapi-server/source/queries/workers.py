@@ -16,6 +16,8 @@ from engine import async_session_factory
 from models.workers import WorkersORM
 from models.projects import ProjectsORM, RelProjectsWorkersORM
 from models.plan_blocks import PlanBlocksORM, BlockTestingORM, BlockBugsORM, PlanBlocksTransferORM
+from new_types import SpecializationCode
+from queries.plan_blocks import close_plan_blocks
 
 from schemas.all import WorkerAddDTO, WorkerDTO, ProjectByWorkerDTO
 from schemas.plan_blocks import PlanBlockDTO
@@ -23,12 +25,14 @@ from schemas.plan_blocks import PlanBlockDTO
 from schemas.workers import WorkerOnFireDTO
 
 
-async def get_workers() -> list[WorkerDTO]:
+async def get_workers(spec_code: SpecializationCode | None = None) -> list[WorkerDTO]:
     session: AsyncSession
     async with async_session_factory() as session:
         query = (
             select(WorkersORM)
         )
+        if spec_code:
+            query = query.where(WorkersORM.specialization_code == spec_code)
 
         workers_orm = (await session.execute(query)).scalars().all()
 
@@ -43,13 +47,15 @@ async def get_worker(worker_id: int) -> WorkerDTO | None:
         return WorkerDTO.model_validate(worker_orm, from_attributes=True) if worker_orm else None
 
 
-async def search_workers(username_mask: str) -> list[WorkerDTO]:
+async def search_workers(username_mask: str, spec_code: SpecializationCode | None = None) -> list[WorkerDTO]:
     session: AsyncSession
     async with async_session_factory() as session:
         query = (
             select(WorkersORM)
             .where(WorkersORM.username.icontains(username_mask))
         )
+        if spec_code:
+            query = query.where(WorkersORM.specialization_code == spec_code)
 
         workers_orm = (await session.execute(query)).scalars().all()
 
@@ -63,6 +69,7 @@ async def add_worker(worker: WorkerAddDTO) -> int | None:
             query = (
                 insert(WorkersORM)
                 .values(**worker.model_dump())
+                .returning(WorkersORM.id)
             )
 
             worker_id = (await session.execute(query)).scalar_one()
@@ -76,9 +83,15 @@ async def add_worker(worker: WorkerAddDTO) -> int | None:
 async def fire_worker(worker_id: int, fire_reason: str) -> WorkerOnFireDTO | None:
     session: AsyncSession
     async with async_session_factory() as session:
+        # Set worker fire info
         query = (
             update(WorkersORM)
-            .where(WorkersORM.id == worker_id)
+            .where(
+                and_(
+                    WorkersORM.id == worker_id,
+                    WorkersORM.fire_date == None
+                )
+            )
             .values(
                 fire_date=datetime.datetime.now(datetime.UTC),
                 fire_reason=fire_reason
@@ -91,44 +104,136 @@ async def fire_worker(worker_id: int, fire_reason: str) -> WorkerOnFireDTO | Non
             return None
         worker = WorkerDTO.model_validate(worker_orm, from_attributes=True)
 
-        plan_blocks_query = (
-            update(PlanBlocksORM)
-            .where(PlanBlocksORM.developer_id == worker_id)
-            .values(end_date=datetime.datetime.now(datetime.UTC))
-            .returning(PlanBlocksORM.id)
-        )
-
-        plan_blocks_id = (await session.execute(plan_blocks_query)).scalars().all()
-
+        # Fire worker from all projects
         projects_query = (
             update(RelProjectsWorkersORM)
-            .where(RelProjectsWorkersORM.worker_id == worker_id)
+            .where(
+                and_(
+                    RelProjectsWorkersORM.worker_id == worker_id,
+                    RelProjectsWorkersORM.project_fire_date == None
+                )
+            )
             .values(project_fire_date=datetime.datetime.now(datetime.UTC))
             .returning(RelProjectsWorkersORM.project_id)
         )
-        block_testing_query = (
-            update(BlockTestingORM)
-            .where(BlockTestingORM.block_id.in_(plan_blocks_id))
-            .values(end_date=datetime.datetime.now(datetime.UTC))
-            .returning(BlockTestingORM.id)
-        )
-        block_bugs_query = (
-            update(BlockBugsORM)
-            .where(BlockBugsORM.block_id.in_(plan_blocks_id))
-        )
+
+        if worker.specialization_code == SpecializationCode.developer:
+            # Select all plan blocks related to developer
+            plan_blocks_query = (
+                select(PlanBlocksORM.id)
+                .where(
+                    and_(
+                        PlanBlocksORM.developer_id == worker_id,
+                        PlanBlocksORM.end_date == None
+                    )
+                )
+            )
+
+            plan_blocks_id = (await session.execute(plan_blocks_query)).scalars().all()
+            # Close all plan blocks
+            await close_plan_blocks(list(map(int, plan_blocks_id)))
+        else:
+            # Close all block test and bugs related to tester
+            block_testing_query = (
+                update(BlockTestingORM)
+                .where(
+                    and_(
+                        BlockTestingORM.tester_id == worker_id,
+                        BlockTestingORM.end_date == None
+                    )
+                )
+                .values(end_date=datetime.datetime.now(datetime.UTC))
+                .returning(BlockTestingORM.id)
+            )
+            block_bugs_query = (
+                update(BlockBugsORM)
+                .where(
+                    and_(
+                        BlockBugsORM.tester_id == worker_id,
+                        BlockBugsORM.fix_date == None
+                    )
+                )
+            )
+            block_testings_id = (await session.execute(block_testing_query)).scalars().all()
+            block_bugs_id = (await session.execute(block_bugs_query)).scalars().all()
 
         projects_id = (await session.execute(projects_query)).scalars().all()
-        block_testings_id = (await session.execute(block_testing_query)).scalars().all()
-        block_bugs_id = (await session.execute(block_bugs_query)).scalars().all()
 
         await session.commit()
         return WorkerOnFireDTO(
             **worker.model_dump(),
             projects_id=projects_id,
-            plan_blocks_id=plan_blocks_id,
-            block_testings_id=block_testings_id,
-            block_bugs_id=block_bugs_id
         )
+
+
+async def fire_worker_from_project(project_id: int, worker_id: int) -> bool:
+    session = AsyncSession
+    async with async_session_factory() as session:
+        # Fire worker from project
+        query = (
+            update(RelProjectsWorkersORM)
+            .where(
+                and_(
+                    RelProjectsWorkersORM.worker_id == worker_id,
+                    RelProjectsWorkersORM.project_id == project_id,
+                    RelProjectsWorkersORM.project_fire_date == None
+                )
+            )
+            .values(project_fire_date=datetime.datetime.now(datetime.UTC))
+            .returning(RelProjectsWorkersORM.project_id)
+        )
+
+        project_id = (await session.execute(query)).scalar_one_or_none()
+
+        if project_id is None:
+            return False
+
+        # Select all plan blocks related to developer in project
+        plan_blocks_query = (
+            select(PlanBlocksORM.id)
+            .where(
+                and_(
+                    PlanBlocksORM.developer_id == worker_id,
+                    PlanBlocksORM.project_id == project_id,
+                    PlanBlocksORM.end_date == None
+                )
+            )
+        )
+
+        plan_blocks_id = (await session.execute(plan_blocks_query)).scalars().all()
+        # Close all plan blocks
+        await close_plan_blocks(list(map(int, plan_blocks_id)))
+
+        # Close all block test and bugs related to tester and project
+        block_testing_query = (
+            update(BlockTestingORM)
+            .where(
+                and_(
+                    BlockTestingORM.tester_id == worker_id,
+                    BlockTestingORM.block_id.in_(plan_blocks_id),
+                    BlockTestingORM.end_date == None
+                )
+            )
+            .values(end_date=datetime.datetime.now(datetime.UTC))
+            .returning(BlockTestingORM.id)
+        )
+        block_bugs_query = (
+            update(BlockBugsORM)
+            .where(
+                and_(
+                    BlockBugsORM.tester_id == worker_id,
+                    BlockBugsORM.block_id.in_(plan_blocks_id),
+                    BlockBugsORM.fix_date == None
+                )
+            )
+            .values(fix_date=datetime.datetime.now(datetime.UTC))
+            .returning(BlockBugsORM.id)
+        )
+        block_testings_id = (await session.execute(block_testing_query)).scalars().all()
+        block_bugs_id = (await session.execute(block_bugs_query)).scalars().all()
+
+        await session.commit()
+        return True
 
 
 async def add_overdue(worker_id: int) -> WorkerOnFireDTO | None:
@@ -137,7 +242,7 @@ async def add_overdue(worker_id: int) -> WorkerOnFireDTO | None:
         query = (
             update(WorkersORM)
             .where(WorkersORM.id == worker_id)
-            .values(WorkersORM.overdue_count+1)
+            .values(overdue_count=WorkersORM.overdue_count+1)
             .returning(WorkersORM)
         )
 
@@ -158,7 +263,12 @@ async def fire_due_to_overdue() -> list[WorkerOnFireDTO]:
 
         query = (
             select(WorkersORM.id)
-            .where(WorkersORM.overdue_count >= 7)
+            .where(
+                and_(
+                    WorkersORM.overdue_count >= 7,
+                    WorkersORM.fire_date == None
+                )
+            )
         )
 
         workers_id = (await session.execute(query)).scalars().all()
@@ -177,12 +287,7 @@ async def get_projects_from_worker(worker_id: int) -> list[ProjectByWorkerDTO]:
                    RelProjectsWorkersORM.project_hire_date,
                    RelProjectsWorkersORM.project_fire_date)
             .select_from(RelProjectsWorkersORM)
-            .where(
-                and_(
-                    RelProjectsWorkersORM.worker_id == worker_id,
-                    RelProjectsWorkersORM.project_fire_date == None
-                )
-            )
+            .where(RelProjectsWorkersORM.worker_id == worker_id)
             .join(ProjectsORM, RelProjectsWorkersORM.project_id == ProjectsORM.id)
         )
 
@@ -283,10 +388,19 @@ async def get_plan_blocks(worker_id: int) -> list[PlanBlockDTO]:
     session: AsyncSession
     async with async_session_factory() as session:
         query = (
-            select(PlanBlocksORM)
+            select(
+                PlanBlocksORM.__table__.columns,
+                PlanBlocksTransferORM.new_status.label("status"),
+                PlanBlocksTransferORM.date.label("status_date")
+            )
+            .select_from(PlanBlocksORM)
             .where(PlanBlocksORM.developer_id == worker_id)
-            .order_by(PlanBlocksORM.start_date)
+            .join(PlanBlocksTransferORM, PlanBlocksTransferORM.block_id == PlanBlocksORM.id)
+            .order_by(PlanBlocksORM.id, PlanBlocksTransferORM.date.desc())
         )
 
-        plan_blocks_orm = (await session.execute(query)).scalars().all()
+        plan_blocks_orm = (await session.execute(query)).unique().all()
+
+        print(plan_blocks_orm)
+
         return [PlanBlockDTO.model_validate(plan_block, from_attributes=True) for plan_block in plan_blocks_orm]

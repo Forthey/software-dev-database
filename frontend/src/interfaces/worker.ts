@@ -1,11 +1,12 @@
+import {Level, SpecializationCode} from "./enums.ts";
 
 export interface WorkerAdd {
-    specialization_code: number
+    specialization_code: SpecializationCode
     username: string
     name: string
     surname: string
     email: string
-    level: number
+    level: Level
 }
 
 export interface Worker extends WorkerAdd {

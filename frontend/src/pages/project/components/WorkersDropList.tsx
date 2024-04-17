@@ -12,6 +12,8 @@ import DropListHeader from "./DropListHeader.tsx";
 
 // Interfaces
 import {Worker, WorkerByProject} from "../../../interfaces/worker.ts";
+import {levelToStr, specCodeToStr} from "../../../interfaces/enums.ts";
+import DeleteButton from "../../../components/DeleteButton.tsx";
 
 
 interface Props {
@@ -24,13 +26,9 @@ function WorkerSearchForm({project_id}: Props) {
     const [workers, setWorkers] = useState<Worker[]>([])
 
     function setWorkersDataList(usernameMask: string) {
-        if (usernameMask.length < 1) {
-            return
-        }
-
         setUsername(usernameMask)
 
-        axios.get<Worker[]>(`http://localhost:8000/workers/search/${usernameMask}`)
+        axios.get<Worker[]>(`http://localhost:8000/workers/search/`, {params: {username_mask: usernameMask}})
             .then(response => {
                 setWorkers(response.data)
             })
@@ -50,11 +48,15 @@ function WorkerSearchForm({project_id}: Props) {
     return (
         <div className="WorkersSearchForm">
             <input className="WorkerUsername" placeholder="Username пользователя"
-                   onChange={event => setWorkersDataList(event.target.value)} list="WorkersDataList"></input>
+                   onChange={event => setWorkersDataList(event.target.value)}
+                   onFocus={event => setWorkersDataList(event.target.value)}
+                   list="WorkersDataList"></input>
             <datalist id="WorkersDataList">
                 {
                     workers.filter(worker => worker.fire_date == null).map(worker =>
-                        <option value={worker.username} key={worker.id}>{`${worker.surname} ${worker.name}`} </option>
+                        <option value={worker.username} key={worker.id}>
+                            {`${worker.surname} ${worker.name}\n${levelToStr[worker.level]} ${specCodeToStr[worker.specialization_code]}`}
+                        </option>
                     )
                 }
             </datalist>
@@ -64,23 +66,33 @@ function WorkerSearchForm({project_id}: Props) {
 }
 
 interface WorkerRowProps {
+    project_id: number
     worker: WorkerByProject
 }
 
 
-function WorkerRow({worker}: WorkerRowProps) {
+function WorkerRow({project_id, worker}: WorkerRowProps) {
     const navigate = useNavigate()
 
     function WorkerNavigate() {
         navigate(`/workers/${worker.id}`)
     }
 
+    function fireWorkerFromProject() {
+        axios.delete(`http://localhost:8000/workers/${worker.id}/projects/${project_id}`)
+            .then(() => navigate(0))
+    }
+
     return (
-        <div className="WorkersTableRow">
+        <div className={`WorkersTableRow${worker.project_fire_date != null ? " Closed" : ""}`}>
             <p className="Clickable" onClick={WorkerNavigate}>{worker.username}</p>
             <p className="Clickable" onClick={WorkerNavigate}>{worker.surname}</p>
             <p className="Clickable" onClick={WorkerNavigate}>{worker.name}</p>
-            <p>{(new Date(worker.project_hire_date.toString())).toDateString()}</p>
+            <p>{levelToStr[worker.level]} {specCodeToStr[worker.specialization_code]}</p>
+            <div>
+                <p>{(new Date(worker.project_hire_date.toString())).toDateString()}</p>
+                <DeleteButton onClick={fireWorkerFromProject}/>
+            </div>
         </div>
     )
 }
@@ -116,12 +128,13 @@ function WorkersDropList({project_id}: Props) {
                         <p>Username</p>
                         <p>Фамилия</p>
                         <p>Имя</p>
+                        <p>Специализация</p>
                         <p>Дата принятия</p>
                     </div>
                     <div className="WorkersTableBody">
                         {
-                            workers.filter(worker => worker.project_fire_date == null).map(worker =>
-                                <WorkerRow worker={worker} key={worker.id} />
+                            workers.map(worker =>
+                                <WorkerRow project_id={project_id} worker={worker} key={worker.id} />
                             )
                         }
                     </div>

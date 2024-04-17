@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from starlette import status
 from starlette.responses import Response
 
+from new_types import SpecializationCode
 from schemas.all import WorkerDTO, WorkerAddDTO, ProjectByWorkerDTO
 from queries import workers
 from schemas.plan_blocks import PlanBlockDTO
@@ -28,9 +29,19 @@ async def get_worker(worker_id: int, response: Response):
     return worker
 
 
-@router.get("/search/{username_mask}", response_model=list[WorkerDTO])
+@router.get("/search/", response_model=list[WorkerDTO])
 async def search_workers(username_mask: str):
     return await workers.search_workers(username_mask)
+
+
+@router.get("/search/developer/", response_model=list[WorkerDTO])
+async def search_developers(username_mask: str | None):
+    return await workers.search_workers(username_mask, SpecializationCode.developer)
+
+
+@router.get("/search/tester/", response_model=list[WorkerDTO])
+async def search_testers(username_mask: str | None):
+    return await workers.search_workers(username_mask, SpecializationCode.tester)
 
 
 @router.post("/", response_model=int | None)
@@ -54,6 +65,12 @@ async def delete_worker(worker_id: int, response: Response):
 @router.get("/{worker_id}/projects", response_model=list[ProjectByWorkerDTO])
 async def get_projects_from_worker(worker_id: int):
     return await workers.get_projects_from_worker(worker_id)
+
+
+@router.delete("/{worker_id}/projects/{project_id}")
+async def delete_worker_from_project(worker_id: int, project_id: int, response: Response):
+    if not await workers.fire_worker_from_project(project_id, worker_id):
+        response.status_code = status.HTTP_400_BAD_REQUEST
 
 
 @router.post("/transfer/{worker_id}/{new_project_id}")

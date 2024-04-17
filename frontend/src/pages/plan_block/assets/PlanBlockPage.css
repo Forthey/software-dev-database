@@ -1,3 +1,19 @@
 .PlanBlockPage {
+    padding-bottom: 5vh;
     color: white;
+    display: grid;
+    place-items: center;
+
+    & .PlanBlockTitle {
+        font-size: 3vw;
+    }
+    & p {
+        padding: 1vh 0 1vh 0;
+    }
+
+
+
+    & .BlockDev, .BlockStatus, .BlockTransfer {
+        font-size: 2vw;
+    }
 }

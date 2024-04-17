@@ -1,0 +1,18 @@
+.ProjectsReportDownload {
+    padding: 5vh 0 5vh 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    border-top: 2px solid white;
+    border-bottom: 2px solid white;
+
+    & p {
+        text-align: center;
+        font-size: 2vw;
+        margin-left: 30%;
+        color: white;
+    }
+    & .DownloadButton {
+        margin-right: 30%;
+    }
+}

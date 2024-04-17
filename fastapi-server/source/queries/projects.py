@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import select, func, update, text, desc, asc, insert
+from sqlalchemy import select, func, update, text, desc, asc, insert, and_, distinct
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,11 +14,11 @@ from engine import async_session_factory
 from models.workers import WorkersORM
 from models.projects import ProjectsORM, RelProjectsWorkersORM
 from models.plan_blocks import PlanBlocksORM, BlockTestingORM, BlockBugsORM, PlanBlocksTransferORM
-
+from queries.plan_blocks import close_plan_blocks
 
 from schemas.all import ProjectAddDTO, ProjectDTO, WorkerByProjectDTO
 
-from new_types import BugCategory, Level, SpecializationCode
+from new_types import BugCategory, Level, SpecializationCode, BlockStatus
 from schemas.plan_blocks import PlanBlockDTO
 from schemas.projects import ProjectOnCloseDTO
 
@@ -77,23 +77,17 @@ async def add_project(project: ProjectAddDTO) -> int | None:
 async def close_project(project_id: int) -> ProjectOnCloseDTO | None:
     session: AsyncSession
     async with async_session_factory() as session:
+        # Close project
         project_query = (
             update(ProjectsORM)
-            .where(ProjectsORM.id == project_id)
+            .where(
+                and_(
+                    ProjectsORM.id == project_id,
+                    ProjectsORM.end_date == None
+                )
+            )
             .values(end_date=datetime.datetime.now(datetime.UTC))
-            .returning(ProjectsORM.id)
-        )
-        workers_query = (
-            update(RelProjectsWorkersORM)
-            .where(RelProjectsWorkersORM.project_id == project_id)
-            .values(project_fire_date=datetime.datetime.now(datetime.UTC))
-            .returning(RelProjectsWorkersORM.worker_id)
-        )
-        plan_blocks_query = (
-            update(PlanBlocksORM)
-            .where(PlanBlocksORM.project_id == project_id)
-            .values(end_date=datetime.datetime.now(datetime.UTC))
-            .returning(PlanBlocksORM.id)
+            .returning(ProjectsORM)
         )
 
         project_id = (await session.execute(project_query)).scalar_one_or_none()
@@ -101,8 +95,34 @@ async def close_project(project_id: int) -> ProjectOnCloseDTO | None:
         if project_id is None:
             return None
 
+        # Fire all workers from project
+        workers_query = (
+            update(RelProjectsWorkersORM)
+            .where(
+                and_(
+                    RelProjectsWorkersORM.project_id == project_id,
+                    RelProjectsWorkersORM.project_fire_date == None
+                )
+            )
+            .values(project_fire_date=datetime.datetime.now(datetime.UTC))
+            .returning(RelProjectsWorkersORM.worker_id)
+        )
+        # Select all opened plan blocks id in project
+        plan_blocks_query = (
+            select(PlanBlocksORM.id)
+            .where(
+                and_(
+                    PlanBlocksORM.project_id == project_id,
+                    PlanBlocksORM.end_date == None
+                )
+            )
+        )
+
         workers_id = (await session.execute(workers_query)).scalars().all()
         plan_blocks_id = (await session.execute(plan_blocks_query)).scalars().all()
+
+        # Close all plan blocks bugs, tests
+        await close_plan_blocks(list(map(int, plan_blocks_id)))
 
         await session.commit()
         return ProjectOnCloseDTO(
@@ -118,7 +138,7 @@ async def get_workers_from_project(project_id: int) -> list[WorkerByProjectDTO]:
         query = (
             select(WorkersORM.__table__.columns, RelProjectsWorkersORM.project_hire_date, RelProjectsWorkersORM.project_fire_date)
             .select_from(RelProjectsWorkersORM)
-            .where(RelProjectsWorkersORM.project_id == project_id and RelProjectsWorkersORM.project_fire_date == None)
+            .where(RelProjectsWorkersORM.project_id == project_id)
             .join(WorkersORM, RelProjectsWorkersORM.worker_id == WorkersORM.id)
         )
 
@@ -128,18 +148,3 @@ async def get_workers_from_project(project_id: int) -> list[WorkerByProjectDTO]:
 
         await session.commit()
         return workers
-
-
-async def get_plan_blocks_from_project(project_id: int) -> list[PlanBlockDTO]:
-    session: AsyncSession
-    async with async_session_factory() as session:
-        query = (
-            select(PlanBlocksORM)
-            .where(PlanBlocksORM.project_id == project_id)
-        )
-
-        plan_blocks_orm = (await session.execute(query)).scalars().all()
-        plan_blocks = [PlanBlockDTO.model_validate(plan_block, from_attributes=True) for plan_block in plan_blocks_orm]
-
-        await session.commit()
-        return plan_blocks

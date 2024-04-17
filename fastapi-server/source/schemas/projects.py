@@ -40,3 +40,6 @@ class ProjectQualityDTO(BaseModel):
     project_name: str
     quality: float
 
+
+class ProjectReportDTO(ProjectDTO):
+    workers: list["WorkerDTO"]

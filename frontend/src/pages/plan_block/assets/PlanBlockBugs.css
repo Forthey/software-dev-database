@@ -1,0 +1,61 @@
+.PlanBlockBugs {
+    width: 100%;
+    display: grid;
+    place-items: center;
+    text-align: center;
+
+    & > p {
+        width: 100%;
+        font-size: 2.5vw;
+        font-weight: bold;
+        color: white;
+        border-bottom: 2px solid white;
+    }
+
+    & .PlanBlockBugsTitle {
+        width: 80%;
+        display: flex;
+        justify-content: space-between;
+        border-bottom: 2px solid white;
+
+        & p {
+            font-weight: bold;
+            font-size: 1.2vw;
+            width: 100%;
+        }
+        & p+p {
+            border-left: 2px solid white;
+        }
+    }
+
+    & .PlanBlockBugsBody {
+        width: 80%;
+        display: grid;
+        place-items: center;
+
+        & .BlockBugRow {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            & p {
+                font-size: 1.2vw;
+                width: 100%;
+            }
+            & p+p {
+                border-left: 2px solid white;
+            }
+
+            & .BugDeadline {
+                display: flex;
+                justify-content: space-between;
+                & p {
+                    margin-left: 10%;
+                }
+
+                & .DeleteButton {
+                    margin-top: 1vh;
+                }
+            }
+        }
+    }
+}

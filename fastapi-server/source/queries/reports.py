@@ -1,13 +1,18 @@
 import datetime
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from engine import async_session_factory
 from models.plan_blocks import PlanBlocksORM
-from models.projects import ProjectsORM
-from schemas.projects import ProjectQualityDTO
+from models.projects import ProjectsORM, RelProjectsWorkersORM
+from models.workers import WorkersORM
+from schemas.projects import ProjectQualityDTO, ProjectReportDTO, ProjectDTO
+from schemas.workers import WorkerReportDTO, WorkerDTO
+
+
+WorkerReportDTO.model_rebuild()
+ProjectReportDTO.model_rebuild()
 
 
 async def get_development_quality() -> list[ProjectQualityDTO]:
@@ -42,3 +47,31 @@ async def get_development_quality() -> list[ProjectQualityDTO]:
             ))
 
         return projects_qualities
+
+
+async def personal_list() -> list[WorkerReportDTO]:
+    session: AsyncSession
+    async with (async_session_factory() as session):
+        query = (
+            select(WorkersORM)
+            .options(selectinload(WorkersORM.projects))
+            .order_by(WorkersORM.fire_date.desc(), WorkersORM.username)
+        )
+
+        workers_orm = (await session.execute(query)).scalars().all()
+
+        return [WorkerReportDTO.model_validate(worker, from_attributes=True) for worker in workers_orm]
+
+
+async def projects_list() -> list[ProjectReportDTO]:
+    session: AsyncSession
+    async with async_session_factory() as session:
+        query = (
+            select(ProjectsORM)
+            .options(selectinload(ProjectsORM.workers))
+            .order_by(ProjectsORM.end_date.desc(), ProjectsORM.name)
+        )
+
+        projects_orm = (await session.execute(query)).scalars().all()
+
+        return [ProjectReportDTO.model_validate(project, from_attributes=True) for project in projects_orm]

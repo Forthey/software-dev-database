@@ -23,6 +23,11 @@ class PlanBlockAdmin(ModelView, model=plan_blocks.PlanBlocksORM):
     column_list = plan_blocks.PlanBlocksORM.__table__.columns
 
 
+class PlanBlockTransferAdmin(ModelView, model=plan_blocks.PlanBlocksTransferORM):
+    name = "Plan Block Transfer"
+    column_list = plan_blocks.PlanBlocksTransferORM.__table__.columns
+
+
 class BlockTestingAdmin(ModelView, model=plan_blocks.BlockTestingORM):
     name = "Block test"
     column_list = plan_blocks.BlockTestingORM.__table__.columns
@@ -36,5 +41,6 @@ class BlockBugAdmin(ModelView, model=plan_blocks.BlockBugsORM):
 admin.add_view(WorkerAdmin)
 admin.add_view(ProjectAdmin)
 admin.add_view(PlanBlockAdmin)
+admin.add_view(PlanBlockTransferAdmin)
 admin.add_view(BlockTestingAdmin)
 admin.add_view(BlockBugAdmin)

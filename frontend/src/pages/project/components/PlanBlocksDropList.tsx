@@ -13,10 +13,12 @@ import TextButton from "../../../components/TextButton.tsx";
 // Interfaces
 import {Worker} from "../../../interfaces/worker.ts";
 import {PlanBlockAdd, PlanBlock} from "../../../interfaces/plan_block.ts"
+import {blockStatusToStr, levelToStr} from "../../../interfaces/enums.ts";
+import DeleteButton from "../../../components/DeleteButton.tsx";
 
 
 interface Props {
-    projectId: number
+    project_id: number
 }
 
 
@@ -25,10 +27,10 @@ interface PlanBlockProps extends Props {
 }
 
 
-function PlanBlockForm({projectId}: Props) {
+function PlanBlockForm({project_id}: Props) {
     const [newPlanBlock, setNewPlanBlock] = useState<PlanBlockAdd>({
         title: "",
-        project_id: projectId,
+        project_id: project_id,
         developer_id: 0,
         deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000 )
     })
@@ -42,13 +44,9 @@ function PlanBlockForm({projectId}: Props) {
     }
 
     function setWorkersDataList(usernameMask: string) {
-        if (usernameMask.length < 1) {
-            return
-        }
-
         setWorkerUsername(usernameMask)
 
-        axios.get<Worker[]>(`http://localhost:8000/workers/search/${usernameMask}`)
+        axios.get<Worker[]>(`http://localhost:8000/workers/search/developer/`, { params: { username_mask: usernameMask } })
             .then(response => {
                 setWorkers(response.data)
             }
@@ -59,19 +57,15 @@ function PlanBlockForm({projectId}: Props) {
         setNewPlanBlock({...newPlanBlock, deadline: new Date(deadlineStr)})
     }
 
-    function isInteger(value: string) {
-        return /^\d+$/.test(value);
-    }
-
     function addPlanBlock() {
-        if (!isInteger(workerUsername)) {
-            alert("В поле username в итоге должен быть выбранный id пользователя")
+        const worker = workers.find(worker => worker.username == workerUsername)
+        if (worker == undefined) {
+            alert("Что-то пошло не так...")
             return
         }
+        newPlanBlock.developer_id = worker.id
 
-        newPlanBlock.developer_id = Number(workerUsername)
-
-        axios.post<PlanBlockAdd>(`http://localhost:8000/projects/${projectId}/plan_blocks`, newPlanBlock)
+        axios.post<PlanBlockAdd>(`http://localhost:8000/projects/${project_id}/plan_blocks`, newPlanBlock)
             .then(() => navigate(0))
             .catch(() => alert("Нельзя добавить блок плана. Скорее всего, разработчик не находится в проекте"))
     }
@@ -81,11 +75,15 @@ function PlanBlockForm({projectId}: Props) {
             <input className="PlanBlockTitle" placeholder="Имя блока"
                    onChange={event => setPlanBlockTitle(event.target.value)}></input>
             <input className="PlanBlockUserName" placeholder="Username пользователя"
-                   onChange={event => setWorkersDataList(event.target.value)} list="WorkersDataList"></input>
+                   onChange={event => setWorkersDataList(event.target.value)}
+                   onFocus={event => setWorkersDataList(event.target.value)}
+                   list="WorkersDataList"></input>
             <datalist id="WorkersDataList">
                 {
                     workers.filter(worker => worker.fire_date == null).map(worker =>
-                        <option value={worker.id} key={worker.id}>{`${worker.username}`} </option>
+                        <option value={worker.username} key={worker.id}>
+                            {`${worker.surname} ${worker.name}\n${levelToStr[worker.level]}`}
+                        </option>
                     )
                 }
             </datalist>
@@ -99,7 +97,7 @@ function PlanBlockForm({projectId}: Props) {
 }
 
 
-function PlanBlockRow({projectId, planBlock}: PlanBlockProps) {
+function PlanBlockRow({project_id, planBlock}: PlanBlockProps) {
     const [developer, setDeveloper] = useState<Worker>()
     const navigate = useNavigate()
 
@@ -116,29 +114,37 @@ function PlanBlockRow({projectId, planBlock}: PlanBlockProps) {
     }
 
     function PlanBlockPageNavigate() {
-        navigate(`/projects/${projectId}/plan_blocks/${planBlock.id}`)
+        navigate(`/projects/${project_id}/plan_blocks/${planBlock.id}`)
+    }
+
+    function closePlanBlock() {
+        axios.delete(`http://localhost:8000/projects/${project_id}/plan_blocks/${planBlock.id}`)
+            .then(() => navigate(0))
     }
 
     return (
-        <div className="PlanBlocksTableRow">
+        <div className={`PlanBlocksTableRow${planBlock.end_date != null ? " Closed" : ""}`}>
             <p className="Clickable" onClick={PlanBlockPageNavigate}>{planBlock.title}</p>
             <p className="Clickable" onClick={developerNavigate}>
                 {developer ? developer.username : planBlock.developer_id}
             </p>
             <p>{(new Date(planBlock.deadline.toString())).toDateString()}</p>
+            <div>
+                <p>{blockStatusToStr[planBlock.status]}</p>
+                <DeleteButton onClick={closePlanBlock}/></div>
         </div>
     )
 }
 
 
-function PlanBlocksDropList({projectId}: Props) {
+function PlanBlocksDropList({project_id}: Props) {
     const [planBlocks, setPlanBlocks] = useState<PlanBlock[]>([])
     // const [active, setActive] = useState(false)
     const [searchActive, setSearchActive] = useState(false)
 
 
     useEffect(() => {
-        axios.get<PlanBlock[]>(`http://localhost:8000/projects/${projectId}/plan_blocks`)
+        axios.get<PlanBlock[]>(`http://localhost:8000/projects/${project_id}/plan_blocks`)
             .then(response => setPlanBlocks(response.data))
     }, [])
     function addPlanBlockForm() {
@@ -149,18 +155,19 @@ function PlanBlocksDropList({projectId}: Props) {
         <div className="PlanBlocksDropList">
             <DropListHeader title="Блоки планов" onClick={addPlanBlockForm} />
             {
-                searchActive ? <PlanBlockForm projectId={projectId} /> : (<></>)
+                searchActive ? <PlanBlockForm project_id={project_id} /> : (<></>)
             }
             <div className="PlanBlocksTable">
                 <div className="PlanBlocksTableHead">
                     <p>Название блока</p>
                     <p>Разработчик</p>
                     <p>Дедлайн</p>
+                    <p>Статус</p>
                 </div>
                 <div className="PlanBlocksTableBody">
                 {
                     planBlocks.map(planBlock =>
-                        <PlanBlockRow planBlock={planBlock} projectId={projectId} key={planBlock.id}/>
+                        <PlanBlockRow planBlock={planBlock} project_id={project_id} key={planBlock.id}/>
                     )
                 }
                 </div>

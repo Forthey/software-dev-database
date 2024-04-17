@@ -1,6 +1,8 @@
 .ProjectPage {
+    width: 100%;
     display: block;
     justify-content: center;
+    padding-bottom: 5vh;
 
     & p {
         text-align: center;
@@ -8,7 +10,7 @@
     }
 
     & .Title {
-        width: 101%;
+        width: 100%;
         padding: 5vh 0 5vh 0;
         border-bottom: 4px solid gray;
 
@@ -22,7 +24,7 @@
     }
 
     & .Body {
-        width: 101%;
+        width: 100%;
         padding: 5vh 0 5vh 0;
         border-bottom: 2px solid gray;
     }

@@ -2,7 +2,7 @@ from pydantic import BaseModel
 import datetime
 
 from database import MetaStr
-from new_types import BugCategory
+from new_types import BugCategory, BlockStatus
 
 
 class PlanBlockAddDTO(BaseModel):
@@ -16,13 +16,15 @@ class PlanBlockDTO(PlanBlockAddDTO):
     id: int
     start_date: datetime.datetime
     end_date: datetime.datetime | None
+    status: BlockStatus | None = None
+    status_date: datetime.datetime | None = None
 
 
 class PlanBlocksTransferDTO(BaseModel):
     id: int
     block_id: int
     tester_id: int
-    developer_id: int
+    new_status: BlockStatus
     date: datetime.datetime
 
 
@@ -37,14 +39,13 @@ class BlockTestingDTO(BaseModel):
 
 class BlockBugAddDTO(BaseModel):
     title: MetaStr
-    tester_id: int
-    developer_id: int
     category: BugCategory
 
 
 class BlockBugDTO(BlockBugAddDTO):
     id: int
     block_id: int
+    tester_id: int
     detection_date: datetime.datetime
     deadline: datetime.datetime
     fix_date: datetime.datetime | None

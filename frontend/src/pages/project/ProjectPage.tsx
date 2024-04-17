@@ -34,7 +34,7 @@ function ProjectPage() {
                     <p className="Description">{project.description}</p>
                 </div>
                 <WorkersDropList project_id={project.id}/>
-                <PlanBlocksDropList projectId={project.id} />
+                <PlanBlocksDropList project_id={project.id} />
             </div>
         )}
     return (<div></div>)

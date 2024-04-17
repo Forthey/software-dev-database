@@ -1,0 +1,21 @@
+@keyframes tilt-shaking {
+    0% { transform: rotate(0deg); }
+    25% { transform: rotate(2deg); }
+    50% { transform: rotate(0deg); }
+    75% { transform: rotate(-2deg); }
+    100% { transform: rotate(0deg); }
+}
+
+
+.DownloadButton {
+    margin-right: 3%;
+    height: 5vh;
+
+    &:hover {
+        animation: tilt-shaking 0.15s infinite;
+    }
+
+    & .DownloadIcon {
+        height: 100%;
+    }
+}
