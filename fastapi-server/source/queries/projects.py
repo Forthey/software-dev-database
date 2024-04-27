@@ -74,6 +74,30 @@ async def add_project(project: ProjectAddDTO) -> int | None:
             return None
 
 
+async def restore_project(project_id: int) -> ProjectDTO | None:
+    session: AsyncSession
+    async with async_session_factory() as session:
+        query = (
+            update(ProjectsORM)
+            .where(
+                and_(
+                    ProjectsORM.id == project_id,
+                    ProjectsORM.end_date != None
+                )
+            )
+            .values(
+                end_date=None
+            )
+            .returning(ProjectsORM)
+        )
+
+        project_orm = (await session.execute(query)).scalar_one_or_none()
+        project = ProjectDTO.model_validate(project_orm, from_attributes=True) if project_orm else None
+
+        await session.commit()
+        return project
+
+
 async def close_project(project_id: int) -> ProjectOnCloseDTO | None:
     session: AsyncSession
     async with async_session_factory() as session:
@@ -87,7 +111,7 @@ async def close_project(project_id: int) -> ProjectOnCloseDTO | None:
                 )
             )
             .values(end_date=datetime.datetime.now(datetime.UTC))
-            .returning(ProjectsORM)
+            .returning(ProjectsORM.id)
         )
 
         project_id = (await session.execute(project_query)).scalar_one_or_none()

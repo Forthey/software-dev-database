@@ -12,6 +12,11 @@
         width: 91%;
         height: 20.5vh;
     }
+
+    .RestoreButton {
+        margin-top: 0.5vh;
+        height: 3vh;
+    }
 }
 
 .Closed {

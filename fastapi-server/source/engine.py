@@ -13,7 +13,7 @@ asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())
 # Создаем асинхронный движок для подключения к postgres
 async_engine = create_async_engine(
     url=settings.get_psycopg_URL,
-    echo=True,
+    echo=False,
     pool_size=5,
     max_overflow=10
 )

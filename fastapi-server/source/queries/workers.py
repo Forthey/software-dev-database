@@ -80,6 +80,30 @@ async def add_worker(worker: WorkerAddDTO) -> int | None:
             return None
 
 
+async def restore_worker(worker_id: int) -> WorkerDTO | None:
+    session: AsyncSession
+    async with async_session_factory() as session:
+        query = (
+            update(WorkersORM)
+            .where(
+                and_(
+                    WorkersORM.id == worker_id,
+                    WorkersORM.fire_date != None
+                )
+            )
+            .values(
+                fire_date=None
+            )
+            .returning(WorkersORM)
+        )
+
+        worker_orm = (await session.execute(query)).scalar_one_or_none()
+        worker = WorkerDTO.model_validate(worker_orm, from_attributes=True) if worker_orm else None
+
+        await session.commit()
+        return worker
+
+
 async def fire_worker(worker_id: int, fire_reason: str) -> WorkerOnFireDTO | None:
     session: AsyncSession
     async with async_session_factory() as session:

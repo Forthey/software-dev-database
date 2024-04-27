@@ -38,6 +38,14 @@ async def add_project(project: ProjectAddDTO, response: Response):
     return result
 
 
+@router.post("/{project_id}", response_model=ProjectDTO | None)
+async def restore_project(project_id: int, response: Response):
+    project = await projects.restore_project(project_id)
+    if project is None:
+        response.status_code = status.HTTP_400_BAD_REQUEST
+    return project
+
+
 @router.delete("/{project_id}", response_model=ProjectOnCloseDTO | None)
 async def delete_project(project_id: int, response: Response):
     result = await projects.close_project(project_id)

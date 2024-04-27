@@ -1,9 +1,15 @@
+// Stylesheets
 import "../assets/ProjectsList.css"
-import ProjectsCard from "./ProjectsCard.tsx";
-import {ProjectPage} from "../../project/ProjectPage.tsx";
+
+// Modules
 import {useEffect, useState} from "react";
 import axios from "axios";
 
+// My components
+import ProjectsCard from "./ProjectsCard.tsx";
+
+// Interfaces
+import {Project} from "../../../interfaces/project.ts";
 
 
 function ProjectsList() {
@@ -33,10 +39,16 @@ function ProjectsList() {
         ))
     }
 
+    function restoreProject(id: number) {
+        setProjects(projects.map(project =>
+            project.id != id ? project : {...project, end_date: null}
+        ))
+    }
+
     return (
         <div className="ProjectsList">
             {
-                projects.map(project => <ProjectsCard project={project} key={project.id} onDelete={deleteProject}/>)
+                projects.map(project => <ProjectsCard project={project} key={project.id} onDelete={deleteProject} onRestore={restoreProject}/>)
             }
         </div>
     )

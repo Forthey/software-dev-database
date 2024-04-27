@@ -35,8 +35,8 @@ function ProjectRow({worker_id, project}: ProjectRowProps) {
 
         setProjectName(nameMask)
 
-        axios.get<Project[]>(`http://localhost:8000/projects/search/${nameMask}`)
-            .then(response => setProjects(response.data))
+        axios.get<Project[]>(`http://localhost:8000/projects/search/`, {params:{name_mask: nameMask}})
+            .then(response => {setProjects(response.data); console.log(response.data)})
     }
 
     function Transfer() {
@@ -56,7 +56,8 @@ function ProjectRow({worker_id, project}: ProjectRowProps) {
             <p>{(new Date(project.project_hire_date)).toDateString()}</p>
             <div>
                 <input type="text" placeholder="Имя проекта"
-                       onChange={event => setProjectsDataList(event.target.value)} list="ProjectsDataList">
+                       onChange={event => setProjectsDataList(event.target.value)}
+                       list="ProjectsDataList">
                 </input>
                 <datalist id="ProjectsDataList">
                     {

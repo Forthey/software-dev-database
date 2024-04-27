@@ -13,6 +13,7 @@ from config import settings
 from models.projects import *  #noqa
 from models.workers import *  #noqa
 from models.plan_blocks import *  #noqa
+from models.test_models import * #noqa
 # declarative base class to get metadata
 from database import Base
 

@@ -52,6 +52,14 @@ async def add_worker(worker: WorkerAddDTO, response: Response):
     return worker_id
 
 
+@router.post("/{worker_id}", response_model=WorkerDTO | None)
+async def restore_worker(worker_id: int, response: Response):
+    worker = await workers.restore_worker(worker_id)
+    if worker is None:
+        response.status_code = status.HTTP_400_BAD_REQUEST
+    return worker
+
+
 @router.delete("/{worker_id}", response_model=WorkerOnFireDTO | None)
 async def delete_worker(worker_id: int, response: Response):
     worker = await workers.fire_worker(worker_id, "Решение начальства")

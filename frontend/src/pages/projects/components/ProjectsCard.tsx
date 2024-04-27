@@ -1,8 +1,17 @@
+// Stylesheets
 import "../assets/ProjectsCard.css"
+
+// Modules
 import {useNavigate} from "react-router";
-import DeleteButton from "../../../components/DeleteButton.tsx";
 import axios from "axios";
-import {ProjectPage} from "../../project/ProjectPage.tsx";
+
+// My components
+import DeleteButton from "../../../components/DeleteButton.tsx";
+
+// Interfaces
+import {Project} from "../../../interfaces/project.ts";
+import RestoreButton from "../../../components/RestoreButton.tsx";
+
 
 
 
@@ -10,10 +19,11 @@ import {ProjectPage} from "../../project/ProjectPage.tsx";
 interface Prop {
     project: Project
     onDelete: Function
+    onRestore: Function
 }
 
 
-function ProjectsCard({project, onDelete}: Prop) {
+function ProjectsCard({project, onDelete, onRestore}: Prop) {
     let navigate = useNavigate()
 
 
@@ -27,11 +37,22 @@ function ProjectsCard({project, onDelete}: Prop) {
         )
     }
 
+    function restoreProject() {
+        axios.post(`http://localhost:8000/projects/${project.id}`).then(
+            onRestore(project.id)
+        )
+    }
+
     return (
         <div className={`ProjectsCard${project.end_date == null ? "" : " Closed"}`}>
             <div className="Title">
                 <p className="Text" onClick={projectNavigate}>{project.name}</p>
-                <DeleteButton onClick={deleteProject}/>
+                {
+                    project.end_date == null ?
+                        <DeleteButton onClick={deleteProject}/>
+                        :
+                        <RestoreButton onClick={restoreProject}/>
+                }
             </div>
             <div className="Description" onClick={projectNavigate}>
                 <p className="Text">{project.description}</p>

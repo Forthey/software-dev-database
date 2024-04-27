@@ -1,8 +1,15 @@
+// Stylesheets
 import "../assets/WorkersList.css"
+
+// Modules
 import axios from "axios";
 import {useEffect, useState} from "react";
+
+// My components
 import WorkerCard from "./WorkerCard.tsx";
-import {Worker} from "./WorkerCard.tsx";
+
+// Interfaces
+import {Worker} from "../../../interfaces/worker.ts";
 
 
 function WorkersList() {
@@ -28,10 +35,14 @@ function WorkersList() {
         ))
     }
 
+    function restoreWorker(id: number) {
+        setWorkers(workers.map(worker => worker.id != id ? worker : {...worker, fire_date: null}))
+    }
+
     return (
         <div className="WorkersList">
             {
-                workers.map(worker => <WorkerCard key={worker.id} worker={worker} onDelete={removeWorker}/>)
+                workers.map(worker => <WorkerCard key={worker.id} worker={worker} onDelete={removeWorker} onRestore={restoreWorker}/>)
             }
         </div>
     )
